@@ -1,2 +1,2 @@
 # crypto_lib
-Crypto stuff in Rust
+Crypto stuff in Rust.
