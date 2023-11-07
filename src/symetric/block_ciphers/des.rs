@@ -257,19 +257,15 @@ fn generic_des(input: &[u8;8], output: &mut [u8; 8], expanded_key: &[[u8; 48]; 1
 }
 
 impl BlockCipher for DES{
-    type BlockType = [u8; 8];
-    type KeyType = [u8; 8];
+    const KEY_SIZE: usize = 8;
+    const BLOCK_SIZE: usize = 8;
 
-    fn block_size() -> usize {8}
-
-    fn key_size() -> usize {8}
-
-    fn cipher(&self, plaintext: &Self::BlockType, ciphertext: &mut Self::BlockType, key: &Self::KeyType) -> Result<(), &'static str> {
+    fn cipher(&self, plaintext: &[u8; Self::BLOCK_SIZE], ciphertext: &mut [u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
         let expanded_key = key_expansion(key);
         return generic_des(plaintext, ciphertext, &expanded_key);
     }
 
-    fn decipher(&self, plaintext: &mut Self::BlockType, ciphertext: &Self::BlockType, key: &Self::KeyType) -> Result<(), &'static str> {
+    fn decipher(&self, plaintext: &mut [u8;Self::BLOCK_SIZE], ciphertext: &[u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
         let mut expanded_key = key_expansion(key);
         expanded_key.reverse();
         return generic_des(ciphertext, plaintext, &expanded_key);
