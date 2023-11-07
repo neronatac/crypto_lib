@@ -260,12 +260,12 @@ impl BlockCipher for DES{
     const KEY_SIZE: usize = 8;
     const BLOCK_SIZE: usize = 8;
 
-    fn cipher(&self, plaintext: &[u8; Self::BLOCK_SIZE], ciphertext: &mut [u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
+    fn cipher(plaintext: &[u8; Self::BLOCK_SIZE], ciphertext: &mut [u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
         let expanded_key = key_expansion(key);
         return generic_des(plaintext, ciphertext, &expanded_key);
     }
 
-    fn decipher(&self, plaintext: &mut [u8;Self::BLOCK_SIZE], ciphertext: &[u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
+    fn decipher(plaintext: &mut [u8;Self::BLOCK_SIZE], ciphertext: &[u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
         let mut expanded_key = key_expansion(key);
         expanded_key.reverse();
         return generic_des(ciphertext, plaintext, &expanded_key);
@@ -284,7 +284,7 @@ mod tests_des {
         let key = [0x13, 0x34, 0x57, 0x79, 0x9B, 0xBC, 0xDF, 0xF1];
         let mut ciphertext = [0; 8];
         let expected = [0x85, 0xE8, 0x13, 0x54, 0x0F, 0x0A, 0xB4, 0x05];
-        DES{}.cipher(&plain, &mut ciphertext, &key).expect("Error during DES execution");
+        DES::cipher(&plain, &mut ciphertext, &key).expect("Error during DES execution");
         assert_eq!(ciphertext, expected);
     }
 
@@ -294,7 +294,7 @@ mod tests_des {
         let key = [0x13, 0x34, 0x57, 0x79, 0x9B, 0xBC, 0xDF, 0xF1];
         let ciphertext = [0x85, 0xE8, 0x13, 0x54, 0x0F, 0x0A, 0xB4, 0x05];
         let expected = [0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF];
-        DES{}.decipher(&mut plain, &ciphertext, &key).expect("Error during DES execution");
+        DES::decipher(&mut plain, &ciphertext, &key).expect("Error during DES execution");
         assert_eq!(plain, expected);
     }
 }
