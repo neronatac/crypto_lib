@@ -1,3 +1,35 @@
+//! Definition of CBC chaining mode
+//!
+//! Encryption:
+//!```text
+//!          P1        P2        Pn
+//!          |         |         |
+//!   IV ----+     ----+     ----+
+//!          |    |    |    |    |
+//!         ---   |   ---   |   ---
+//!        | K |  |  | K | ... | K |
+//!         ---   |   ---   |   ---
+//!          |    |    |    |    |
+//!          |----     |----     |
+//!          |         |         |
+//!          C1        C2        Cn
+//!```
+//!
+//! Decryption:
+//!```text
+//!          C1        C2        Cn
+//!          |         |         |
+//!          |----     |----     |
+//!          |    |    |    |    |
+//!         ---   |   ---   |   ---
+//!        | K |  |  | K | ... | K |
+//!         ---   |   ---   |   ---
+//!          |    |    |    |    |
+//!   IV ----+     ----+     ----+
+//!          |         |         |
+//!          C1        C2        Cn
+//! ```
+
 use crate::symetric::block_ciphers_modes::common::{BlockChainingWithIV};
 use crate::symetric::block_ciphers::common::BlockCipher;
 use crate::utils::{check_cipher_params, extract_array_from_slice, xor_arrays};

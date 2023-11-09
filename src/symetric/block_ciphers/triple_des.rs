@@ -1,3 +1,5 @@
+//! Definition of Triple-DES 2K and Triple-DES 3K
+
 use crate::symetric::block_ciphers::common::BlockCipher;
 use crate::symetric::block_ciphers::des::DES;
 use crate::utils::extract_array_from_slice;
@@ -18,7 +20,7 @@ impl BlockCipher for TripleDES2K{
 
         let mut tmp_res2 = [0; 8];
         DES::decipher(&mut tmp_res2, &tmp_res1, &k2).expect("Error during 2nd DES");
-        
+
         DES::cipher(&tmp_res2, ciphertext, &k1).expect("Error during 3rd DES");
 
         Ok(())

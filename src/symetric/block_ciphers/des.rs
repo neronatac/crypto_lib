@@ -1,3 +1,5 @@
+//! Definition of DES
+
 use crate::symetric::block_ciphers::common::BlockCipher;
 use crate::utils::xor_arrays;
 

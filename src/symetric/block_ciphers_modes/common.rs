@@ -1,5 +1,8 @@
+//! Shared code between chaining modes
+
 use crate::symetric::block_ciphers::common::BlockCipher;
 
+/// Trait implemented by chaining modes that do not need an IV or anything else.
 pub trait BlockChaining<T>
 where
     T: BlockCipher,  // chaining only applies to block ciphers
@@ -8,6 +11,7 @@ where
     fn decipher(plaintext: &mut [u8], ciphertext: &[u8], key: &[u8; T::KEY_SIZE]) -> Result<(), &'static str>;
 }
 
+/// Trait implemented by chaining modes that need an IV.
 pub trait BlockChainingWithIV<T>
 where
     T: BlockCipher,
