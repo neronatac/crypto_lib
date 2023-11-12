@@ -3,7 +3,7 @@
 
 //! Crate to do some crypto
 //!
-//! In order to make the code simpler, the feature `generic_const_exprs` is enabled.
+//! In order to make the code simpler, the feature `generic_const_exprs` is enabled (only on nightly builds).
 //! It allows to use constants to define arrays (e.g. `key: [u8; KEY_SIZE];`).
 //!
 //! Algorithms are reparted in 3 categories:
