@@ -9,7 +9,7 @@
 //!
 //! ```
 //! use crate::crypto_lib::symetric::stream_ciphers::common::StreamCipher;
-//! use crypto_lib::symetric::stream_ciphers::salsa20::{Salsa20K32, SalsaInitStruct};//!
+//! use crypto_lib::symetric::stream_ciphers::salsa20::{Salsa20K32, SalsaInitStruct};
 //!
 //! let nonce = 0x0011223344556677;
 //!
