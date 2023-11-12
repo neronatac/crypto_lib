@@ -7,9 +7,9 @@
 //! It allows to use constants to define arrays (e.g. `key: [u8; KEY_SIZE];`).
 //!
 //! Algorithms are reparted in 3 categories:
-//! - [symetric](symetric)
-//! - [asymetric](asymetric)
-//! - [hash](hash)
+//! - [symetric]
+//! - [asymetric]
+//! - [hash]
 
 pub mod symetric;
 mod utils;

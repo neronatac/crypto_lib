@@ -228,7 +228,7 @@ fn function_f(r: &SemiStateDES, k: &[u8; 48]) -> SemiStateDES {
 }
 
 
-/// Serves as encrypt AND as decrypt function. The choice is made by setting the expanded key in normal or inverted.
+// Serves as encrypt AND as decrypt function. The choice is made by setting the expanded key in normal or inverted.
 fn generic_des(input: &[u8;8], output: &mut [u8; 8], expanded_key: &[[u8; 48]; 16]) -> Result<(), &'static str> {
     let mut state = byte_array_to_bit_array(input);
 

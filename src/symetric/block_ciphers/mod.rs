@@ -4,8 +4,8 @@
 //! - AES128 / AES192 / AES256
 //! - DES / Triple-DES 2K / Triple-DES 3K
 //!
-//! Each cipher is defined in a struct and exposes the `cipher` and `decipher` static methods to
-//! treat a single block of data.
+//! Each cipher exposes the `cipher` and `decipher` static methods to
+//! treat a single block of data (see [common::BlockCipher] for more details).
 //!
 //! # Example
 //!

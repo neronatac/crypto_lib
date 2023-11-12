@@ -8,7 +8,6 @@
 /// - `decipher`: decrypts the `ciphertext` and put the result in `plaintext`
 ///
 /// These methods can only treat a single block.
-///
 pub trait BlockCipher {
     const KEY_SIZE: usize;
     const BLOCK_SIZE: usize;
