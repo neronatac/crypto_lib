@@ -12,4 +12,5 @@
 //! - [hash]
 
 pub mod symetric;
+pub mod hash;
 mod utils;

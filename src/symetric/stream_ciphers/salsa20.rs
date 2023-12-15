@@ -57,14 +57,6 @@ macro_rules! define_salsa {
                 $salsa_name{state, remaining_bytes: 0 }
             }
 
-            fn from_state(state: &Self::State) -> Self {
-                $salsa_name{state: *state, remaining_bytes: 0}
-            }
-
-            fn get_state(&self) -> Self::State {
-                self.state
-            }
-
             fn cipher(&mut self, plaintext: &[u8], ciphertext: &mut [u8]) -> Result<(), &'static str> {
                 // check parameters
                 if plaintext.len() != ciphertext.len() {
