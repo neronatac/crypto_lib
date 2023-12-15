@@ -1,7 +1,7 @@
 //! Stream ciphers.
 //!
 //! Currently, these ciphers are implemented:
-//! - Salsa20 (32 and 16 bytes key)
+//! - Salsa20/Salsa12/Salsa8 (32 and 16 bytes key)
 //!
 //! Each cipher exposes the `cipher` method to treat some data (see [common::StreamCipher] for more details).
 //!
@@ -9,7 +9,7 @@
 //!
 //! ```
 //! use crate::crypto_lib::symetric::stream_ciphers::common::StreamCipher;
-//! use crypto_lib::symetric::stream_ciphers::salsa20::{Salsa20K32, SalsaInitStruct};
+//! use crypto_lib::symetric::stream_ciphers::salsa::{Salsa20K32, SalsaInitStruct};
 //!
 //! let nonce = 0x0011223344556677;
 //!
@@ -74,4 +74,4 @@
 //! ```
 
 pub mod common;
-pub mod salsa20;
+pub mod salsa;

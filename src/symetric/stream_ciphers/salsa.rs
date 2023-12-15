@@ -1,4 +1,4 @@
-//! Definition of Salsa20 algorithms (32 and 16-bytes key).
+//! Definition of Salsa20, 12 and 8 algorithms (32 and 16-bytes key).
 
 // https://cr.yp.to/snuffle/spec.pdf
 
@@ -15,7 +15,7 @@ pub struct SalsaInitStruct {
 type SalsaState = [u32; 16];
 
 macro_rules! define_salsa {
-    ( $salsa_name:ident, $key_length:expr, $const_name:expr) => {
+    ( $salsa_name:ident, $nb_double_rounds:expr, $key_length:expr, $const_name:expr) => {
         pub struct $salsa_name {
             state: SalsaState,  // state is stored as little_endian words to simplify the hash function
             remaining_bytes: usize  // number of bytes that can be ciphered using the current state
@@ -69,7 +69,7 @@ macro_rules! define_salsa {
 
                 // process remaining bytes in state
                 if self.remaining_bytes > 0 {
-                    let hashed = hash_function(&self.state);
+                    let hashed = hash_function(&self.state, $nb_double_rounds);
                     for j in 0..self.remaining_bytes {
                         ciphertext[j] = hashed[64 - self.remaining_bytes + j] ^ plaintext[j]
                     }
@@ -79,7 +79,7 @@ macro_rules! define_salsa {
                 }
 
                 while offset < max {
-                    let hashed = hash_function(&self.state);
+                    let hashed = hash_function(&self.state, $nb_double_rounds);
 
                     if max - offset >= 64 { // if an entire block can be ciphered
                         let res = xor_arrays(&hashed, &plaintext[offset..offset +64].try_into().unwrap());
@@ -103,8 +103,12 @@ macro_rules! define_salsa {
     }
 }
 
-define_salsa!(Salsa20K32, 32, SIG);
-define_salsa!(Salsa20K16, 16, TAU);
+define_salsa!(Salsa20K32, 10, 32, SIG);
+define_salsa!(Salsa20K16, 10, 16, TAU);
+define_salsa!(Salsa12K32, 6, 32, SIG);
+define_salsa!(Salsa12K16, 6, 16, TAU);
+define_salsa!(Salsa8K32, 4, 32, SIG);
+define_salsa!(Salsa8K16, 4, 16, TAU);
 
 #[inline]
 fn quarter_round(y0: u32, y1: u32, y2: u32, y3: u32) -> (u32, u32, u32, u32) {
@@ -151,10 +155,10 @@ fn double_round(seq: &SalsaState) -> SalsaState {
     row_round(&column_round(seq))
 }
 
-fn hash_function(state: &SalsaState) -> [u8; 64] {
+fn hash_function(state: &SalsaState, nb_double_rounds: usize) -> [u8; 64] {
     let mut tmp = *state;
 
-    for _ in 0..10 {
+    for _ in 0..nb_double_rounds {
         tmp = double_round(&tmp);
     }
 
@@ -267,7 +271,7 @@ mod tests_chacha {
             69,144, 51, 57, 29, 29,150, 26,150, 30,235,249,190,163,251, 48,
             27,111,114,114,118, 40,152,157,180, 57, 27, 94,107, 42,236, 35];
 
-        let res = hash_function(&mut state);
+        let res = hash_function(&mut state, 10);
 
         assert_eq!(res, expected_bytes);
     }
