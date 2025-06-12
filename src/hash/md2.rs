@@ -2,7 +2,7 @@
 
 // see https://www.rfc-editor.org/info/rfc1319
 
-use crate::hash::common::Hash;
+use crate::hash::common::{Hash, generic_update_func};
 
 pub struct MD2Context {
     state: [u8; 16],
@@ -17,6 +17,7 @@ pub struct MD2 {
 
 impl Hash for MD2 {
     const DIGEST_SIZE: usize = 16;
+    const BLOCK_SIZE: usize = 16;
     
     type DigestType = [u8; 16];
     type InitStruct = ();
@@ -26,45 +27,16 @@ impl Hash for MD2 {
         MD2{
             context: MD2Context{state: [0; 16], checksum: [0; 16]},
             remaining_bytes: [0; 15],
-            remaining_bytes_len: 0
+            remaining_bytes_len: 0,
         }
     }
 
-    fn update(&mut self, data: &[u8]) {
-        let mut offset = 0;
-        let mut offset_in_block = self.remaining_bytes_len;
-        let max = data.len();
-        let mut cur_block = [0; 16];
-
-        // take remaining bytes from previous uncompleted block
-        for i in 0..self.remaining_bytes_len {
-            cur_block[i] = self.remaining_bytes[i];
-        }
-
-        // process blocks until the end
-        while offset < max {
-            if 16 - offset_in_block <= max - offset { // entire block
-                for i in 0..16 - offset_in_block {
-                    cur_block[i+offset_in_block] = data[offset + i];
-                }
-                offset += 16 - offset_in_block;
-                offset_in_block = 0;
-                self.remaining_bytes_len = 0;
-                process_block(&mut self.context, &cur_block);
-            } else { // partial block, save to self.remaining_bytes
-                for i in 0..max - offset {
-                    self.remaining_bytes[i] = data[offset + i];
-                }
-                self.remaining_bytes_len = max - offset;
-                offset = max;
-            }
-        }
-    }
+    generic_update_func!();
 
     fn finalise(&mut self) -> Self::DigestType {
         let mut cur_block = [0; 16];
 
-        // take remaining bytes from previous uncompleted block
+        // take remaining bytes from the previous uncompleted block
         for i in 0..self.remaining_bytes_len {
             cur_block[i] = self.remaining_bytes[i];
         }
