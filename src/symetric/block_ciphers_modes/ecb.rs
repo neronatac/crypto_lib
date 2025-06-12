@@ -28,12 +28,11 @@ use crate::utils::{check_cipher_params, extract_array_from_slice};
 
 pub struct ECB {}
 
-impl<T> BlockChaining<T> for ECB
+impl<T, const NB: usize> BlockChaining<T> for ECB
 where
-    T: BlockCipher,
-    [(); T::BLOCK_SIZE]:  // don't really know why it is mandatory...
+    T: BlockCipher<BlockType = [u8; NB]>,
 {
-    fn cipher(plaintext: &[u8], ciphertext: &mut [u8], key: &[u8; T::KEY_SIZE]) -> Result<(), &'static str> {
+    fn cipher(plaintext: &[u8], ciphertext: &mut [u8], key: &T::KeyType) -> Result<(), &'static str> {
         // check parameters
         check_cipher_params(plaintext, ciphertext, T::BLOCK_SIZE)?;
 
@@ -44,15 +43,15 @@ where
             let mut chunk_c = extract_array_from_slice(ciphertext, i)?;
             T::cipher(&chunk_p, &mut chunk_c, key)?;
             for j in 0..T::BLOCK_SIZE {
-                ciphertext[i+j] = chunk_c[j].into();
+                ciphertext[i+j] = chunk_c[j];
             }
             i += T::BLOCK_SIZE;
         }
 
-        return Ok(());
+        Ok(())
     }
 
-    fn decipher(plaintext: &mut [u8], ciphertext: &[u8], key: &[u8; T::KEY_SIZE]) -> Result<(), &'static str> {
+    fn decipher(plaintext: &mut [u8], ciphertext: &[u8], key: &T::KeyType) -> Result<(), &'static str> {
         // check parameters
         check_cipher_params(plaintext, ciphertext, T::BLOCK_SIZE)?;
 
@@ -63,12 +62,12 @@ where
             let chunk_c = extract_array_from_slice(ciphertext, i)?;
             T::decipher(&mut chunk_p, &chunk_c, key)?;
             for j in 0..T::BLOCK_SIZE {
-                plaintext[i + j] = chunk_p[j].into();
+                plaintext[i + j] = chunk_p[j];
             }
             i += T::BLOCK_SIZE;
         }
 
-        return Ok(());
+        Ok(())
     }
 }
 

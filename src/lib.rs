@@ -1,6 +1,3 @@
-#![allow(incomplete_features)]
-#![feature(generic_const_exprs)]
-
 //! Crate to do some crypto
 //!
 //! In order to make the code simpler, the feature `generic_const_exprs` is enabled (only on nightly builds).

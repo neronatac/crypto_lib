@@ -34,10 +34,11 @@ macro_rules! define_salsa {
 
         impl StreamCipher for $salsa_name {
             const KEY_SIZE: usize = $key_length;
+            type KeyType = [u8; $key_length];
             type InitStruct = SalsaInitStruct;
             type State = SalsaState;
 
-            fn new(init_struct: &Self::InitStruct, key: &[u8; Self::KEY_SIZE]) -> Self{
+            fn new(init_struct: &Self::InitStruct, key: &Self::KeyType) -> Self{
                 let n1 = ((init_struct.nonce >> 32) as u32).swap_bytes();
                 let n0 = (init_struct.nonce as u32).swap_bytes();
 

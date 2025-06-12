@@ -18,11 +18,13 @@
 ///
 /// Do not call `update` after `finalise` was called.
 pub trait Hash {
+    const DIGEST_SIZE: usize;
+
+    type DigestType;   // &[u8; xxx]
     type InitStruct;
     type Context;
-    const DIGEST_SIZE: usize;
 
     fn new(init_struct: &Self::InitStruct) -> Self;
     fn update(&mut self, data: &[u8]);
-    fn finalise(&mut self) -> [u8; Self::DIGEST_SIZE];
+    fn finalise(&mut self) -> Self::DigestType;
 }

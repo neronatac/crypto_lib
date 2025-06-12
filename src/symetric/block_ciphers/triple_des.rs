@@ -10,8 +10,11 @@ pub struct TripleDES3K {}
 impl BlockCipher for TripleDES2K{
     const KEY_SIZE: usize = 16;
     const BLOCK_SIZE: usize = 8;
+    
+    type KeyType = [u8; 16];
+    type BlockType = [u8; 8];
 
-    fn cipher(plaintext: &[u8; Self::BLOCK_SIZE], ciphertext: &mut [u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
+    fn cipher(plaintext: &Self::BlockType, ciphertext: &mut Self::BlockType, key: &Self::KeyType) -> Result<(), &'static str> {
         let k1 = extract_array_from_slice(key.as_slice(), 0)?;
         let k2 = extract_array_from_slice(key.as_slice(), 8)?;
 
@@ -26,7 +29,7 @@ impl BlockCipher for TripleDES2K{
         Ok(())
     }
 
-    fn decipher(plaintext: &mut [u8;Self::BLOCK_SIZE], ciphertext: &[u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
+    fn decipher(plaintext: &mut Self::BlockType, ciphertext: &Self::BlockType, key: &Self::KeyType) -> Result<(), &'static str> {
         let k1 = extract_array_from_slice(key.as_slice(), 0)?;
         let k2 = extract_array_from_slice(key.as_slice(), 8)?;
 
@@ -46,7 +49,10 @@ impl BlockCipher for TripleDES3K{
     const KEY_SIZE: usize = 24;
     const BLOCK_SIZE: usize = 8;
 
-    fn cipher(plaintext: &[u8; Self::BLOCK_SIZE], ciphertext: &mut [u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
+    type KeyType = [u8; 24];
+    type BlockType = [u8; 8];
+
+    fn cipher(plaintext: &Self::BlockType, ciphertext: &mut Self::BlockType, key: &Self::KeyType) -> Result<(), &'static str> {
         let k1 = extract_array_from_slice(key.as_slice(), 0)?;
         let k2 = extract_array_from_slice(key.as_slice(), 8)?;
         let k3 = extract_array_from_slice(key.as_slice(), 16)?;
@@ -62,7 +68,7 @@ impl BlockCipher for TripleDES3K{
         Ok(())
     }
 
-    fn decipher(plaintext: &mut [u8;Self::BLOCK_SIZE], ciphertext: &[u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
+    fn decipher(plaintext: &mut Self::BlockType, ciphertext: &Self::BlockType, key: &Self::KeyType) -> Result<(), &'static str> {
         let k1 = extract_array_from_slice(key.as_slice(), 0)?;
         let k2 = extract_array_from_slice(key.as_slice(), 8)?;
         let k3 = extract_array_from_slice(key.as_slice(), 16)?;

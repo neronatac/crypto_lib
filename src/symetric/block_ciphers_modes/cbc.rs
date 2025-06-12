@@ -36,11 +36,11 @@ use crate::utils::{check_cipher_params, extract_array_from_slice, xor_arrays};
 
 pub struct CBC{}
 
-impl<T> BlockChainingWithIV<T> for CBC
+impl<T, const NB: usize> BlockChainingWithIV<T> for CBC
 where
-    T: BlockCipher,
+    T: BlockCipher<BlockType = [u8; NB]>,
 {
-    fn cipher(plaintext: &[u8], ciphertext: &mut [u8], key: &[u8; T::KEY_SIZE], iv: &[u8; T::BLOCK_SIZE]) -> Result<(), &'static str> {
+    fn cipher(plaintext: &[u8], ciphertext: &mut [u8], key: &T::KeyType, iv: &T::BlockType) -> Result<(), &'static str> {
         let mut last_cipher = *iv;
 
         // check parameters
@@ -65,7 +65,7 @@ where
         return Ok(());
     }
 
-    fn decipher(plaintext: &mut [u8], ciphertext: &[u8], key: &[u8; T::KEY_SIZE], iv: &[u8; T::BLOCK_SIZE]) -> Result<(), &'static str> {
+    fn decipher(plaintext: &mut [u8], ciphertext: &[u8], key: &T::KeyType, iv: &T::BlockType) -> Result<(), &'static str> {
         let mut last_cipher = *iv;
 
         // check parameters

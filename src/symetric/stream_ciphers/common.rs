@@ -17,10 +17,11 @@
 /// (i.e. conceptually, `cipher(a, b) == cipher(a), cipher(b)`).
 pub trait StreamCipher {
     const KEY_SIZE: usize;
-
+    
+    type KeyType;  // &[u8; xxx]
     type InitStruct;
     type State;
 
-    fn new(init_struct: &Self::InitStruct, key: &[u8; Self::KEY_SIZE]) -> Self;
+    fn new(init_struct: &Self::InitStruct, key: &Self::KeyType) -> Self;
     fn cipher(&mut self, plaintext: &[u8], ciphertext: &mut [u8]) -> Result<(), &'static str>;
 }

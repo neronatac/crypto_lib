@@ -16,9 +16,11 @@ pub struct MD2 {
 }
 
 impl Hash for MD2 {
+    const DIGEST_SIZE: usize = 16;
+    
+    type DigestType = [u8; 16];
     type InitStruct = ();
     type Context = MD2Context;
-    const DIGEST_SIZE: usize = 16;
 
     fn new(_: &Self::InitStruct) -> Self {
         MD2{
@@ -59,7 +61,7 @@ impl Hash for MD2 {
         }
     }
 
-    fn finalise(&mut self) -> [u8; Self::DIGEST_SIZE] {
+    fn finalise(&mut self) -> Self::DigestType {
         let mut cur_block = [0; 16];
 
         // take remaining bytes from previous uncompleted block
@@ -105,7 +107,7 @@ const PI_SUBST: [u8; 256] = [
 ];
 
 fn process_block(context: &mut MD2Context, block: &[u8; 16]) {
-    // encrypt block
+    // hash block
     let mut x = [0; 48];
     let mut t = 0;
     for i in 0..16 {

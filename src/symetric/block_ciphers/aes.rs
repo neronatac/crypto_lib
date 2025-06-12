@@ -197,8 +197,11 @@ macro_rules! define_aes {
         impl BlockCipher for $aes_name {
             const KEY_SIZE: usize = $key_length;
             const BLOCK_SIZE: usize = 16;
+            
+            type KeyType = [u8; $key_length];
+            type BlockType = [u8; 16];
 
-            fn cipher(plaintext: &[u8; Self::BLOCK_SIZE], ciphertext: &mut [u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
+            fn cipher(plaintext: &Self::BlockType, ciphertext: &mut Self::BlockType, key: &Self::KeyType) -> Result<(), &'static str> {
                 let nr = $nr;
                 let mut state: StateAes = [[0;4];4];
 
@@ -238,7 +241,7 @@ macro_rules! define_aes {
                 return Ok(());
             }
 
-            fn decipher(plaintext: &mut [u8;Self::BLOCK_SIZE], ciphertext: &[u8;Self::BLOCK_SIZE], key: &[u8; Self::KEY_SIZE]) -> Result<(), &'static str> {
+            fn decipher(plaintext: &mut Self::BlockType, ciphertext: &Self::BlockType, key: &Self::KeyType) -> Result<(), &'static str> {
                 let nr = $nr;
                 let mut state: StateAes = [[0;4];4];
 

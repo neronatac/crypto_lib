@@ -2,8 +2,9 @@
 //!
 //! Currently, these hash algorithms are implemented:
 //! - MD2
+//! - MD4
 //!
-//! Each cipher exposes the `update` and `finalise` methods to respectively treat some data and compute the final hash
+//! Each hash exposes the `update` and `finalise` methods to respectively treat some data and compute the final hash
 //! (see [crate::hash::common] for more details).
 //!
 //! # Example
@@ -30,3 +31,4 @@
 
 pub mod common;
 pub mod md2;
+pub mod md4;
