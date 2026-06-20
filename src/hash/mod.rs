@@ -32,4 +32,5 @@
 pub mod common;
 pub mod md2;
 pub mod md4;
+pub mod sha0;
 pub mod sha1;
