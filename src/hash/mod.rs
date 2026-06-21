@@ -3,6 +3,8 @@
 //! Currently, these hash algorithms are implemented:
 //! - MD2
 //! - MD4
+//! - SHA0
+//! - SHA1
 //!
 //! Each hash exposes the `update` and `finalise` methods to respectively treat some data and compute the final hash
 //! (see [crate::hash::common] for more details).
@@ -32,5 +34,4 @@
 pub mod common;
 pub mod md2;
 pub mod md4;
-pub mod sha0;
-pub mod sha1;
+pub mod sha;

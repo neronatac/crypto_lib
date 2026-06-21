@@ -31,7 +31,7 @@ impl Hash for MD2 {
         }
     }
 
-    generic_update_func!();
+    generic_update_func!(process_block);
 
     fn finalise(&mut self) -> Self::DigestType {
         let mut cur_block = [0; 16];

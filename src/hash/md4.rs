@@ -34,7 +34,7 @@ impl Hash for MD4 {
         }
     }
 
-    generic_update_func!((u64));
+    generic_update_func!(process_block u64);
 
     fn finalise(&mut self) -> Self::DigestType {
         let mut cur_block = [0; 64];

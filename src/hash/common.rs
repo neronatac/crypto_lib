@@ -31,8 +31,8 @@ pub trait Hash {
 }
 
 macro_rules! generic_update_func {
-    // without message length storing
-    ($(($msg_length_type:ty))?) => {
+    // message length storing is optional
+    ($process_block_fn:ident $($msg_length_type:ty)?) => {
         fn update(&mut self, data: &[u8]) {
             let mut cur_block = [0; Self::BLOCK_SIZE];
     
@@ -55,7 +55,7 @@ macro_rules! generic_update_func {
                 offset += 1;
                 
                 if self.remaining_bytes_len == Self::BLOCK_SIZE {
-                    process_block(&mut self.context, &cur_block);
+                    $process_block_fn(&mut self.context, &cur_block);
                     self.remaining_bytes_len = 0;
                 }
             }
