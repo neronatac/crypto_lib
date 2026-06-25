@@ -6,6 +6,7 @@
 //! - SHA0
 //! - SHA1
 //! - SHA256
+//! - SHA512
 //!
 //! Each hash exposes the `update` and `finalise` methods to respectively treat some data and compute the final hash
 //! (see [crate::hash::common] for more details).

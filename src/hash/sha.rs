@@ -37,6 +37,22 @@ fn sha256_expansion(w: &mut [u32; 64]) {
 }
 
 
+fn sha512_expansion(w: &mut [u64; 80]) {
+    let sigma0 = |x: u64| -> u64 {
+        x.rotate_right(1) ^ x.rotate_right(8) ^ x.shr(7)
+    };
+    let sigma1 = |x: u64| -> u64 {
+        x.rotate_right(19) ^ x.rotate_right(61) ^ x.shr(6)
+    };
+    for t in 16..80 {
+        w[t] = sigma1(w[t - 2])
+            .wrapping_add(w[t-7])
+            .wrapping_add(sigma0(w[t - 15]))
+            .wrapping_add(w[t - 16]);
+    }
+}
+
+
 fn sha0_round(round: usize, wv: &mut [u32; 5], w: &[u32; 80]) {
     let tmp = wv[0]
         .rotate_left(5)
@@ -110,16 +126,83 @@ fn sha256_round(round: usize, wv: &mut [u32; 8], w: &[u32; 64]) {
 }
 
 
+fn sha512_round(round: usize, wv: &mut [u64; 8], w: &[u64; 80]) {
+    let ch = |x: u64, y: u64, z: u64| -> u64 {
+        (x & y) ^ (!x & z)
+    };
+    let maj = |x: u64, y: u64, z: u64| -> u64 {
+        (x & y) ^ (x & z) ^ (y & z)
+    };
+    let sigma0 = |x: u64| -> u64 {
+        x.rotate_right(28) ^ x.rotate_right(34) ^ x.rotate_right(39)
+    };
+    let sigma1 = |x: u64| -> u64 {
+        x.rotate_right(14) ^ x.rotate_right(18) ^ x.rotate_right(41)
+    };
+    let k: [u64; 80] = [
+        0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
+        0x3956c25bf348b538, 0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118,
+        0xd807aa98a3030242, 0x12835b0145706fbe, 0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2,
+        0x72be5d74f27b896f, 0x80deb1fe3b1696b1, 0x9bdc06a725c71235, 0xc19bf174cf692694,
+        0xe49b69c19ef14ad2, 0xefbe4786384f25e3, 0x0fc19dc68b8cd5b5, 0x240ca1cc77ac9c65,
+        0x2de92c6f592b0275, 0x4a7484aa6ea6e483, 0x5cb0a9dcbd41fbd4, 0x76f988da831153b5,
+        0x983e5152ee66dfab, 0xa831c66d2db43210, 0xb00327c898fb213f, 0xbf597fc7beef0ee4,
+        0xc6e00bf33da88fc2, 0xd5a79147930aa725, 0x06ca6351e003826f, 0x142929670a0e6e70,
+        0x27b70a8546d22ffc, 0x2e1b21385c26c926, 0x4d2c6dfc5ac42aed, 0x53380d139d95b3df,
+        0x650a73548baf63de, 0x766a0abb3c77b2a8, 0x81c2c92e47edaee6, 0x92722c851482353b,
+        0xa2bfe8a14cf10364, 0xa81a664bbc423001, 0xc24b8b70d0f89791, 0xc76c51a30654be30,
+        0xd192e819d6ef5218, 0xd69906245565a910, 0xf40e35855771202a, 0x106aa07032bbd1b8,
+        0x19a4c116b8d2d0c8, 0x1e376c085141ab53, 0x2748774cdf8eeb99, 0x34b0bcb5e19b48a8,
+        0x391c0cb3c5c95a63, 0x4ed8aa4ae3418acb, 0x5b9cca4f7763e373, 0x682e6ff3d6b2b8a3,
+        0x748f82ee5defb2fc, 0x78a5636f43172f60, 0x84c87814a1f0ab72, 0x8cc702081a6439ec,
+        0x90befffa23631e28, 0xa4506cebde82bde9, 0xbef9a3f7b2c67915, 0xc67178f2e372532b,
+        0xca273eceea26619c, 0xd186b8c721c0c207, 0xeada7dd6cde0eb1e, 0xf57d4f7fee6ed178,
+        0x06f067aa72176fba, 0x0a637dc5a2c898a6, 0x113f9804bef90dae, 0x1b710b35131c471b,
+        0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,
+        0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
+    ];
+
+    let t1 = wv[7]
+        .wrapping_add(sigma1(wv[4]))
+        .wrapping_add(ch(wv[4], wv[5], wv[6]))
+        .wrapping_add(k[round])
+        .wrapping_add(w[round]);
+
+    let t2 = sigma0(wv[0])
+        .wrapping_add(maj(wv[0], wv[1], wv[2]));
+
+    wv[7] = wv[6];
+    wv[6] = wv[5];
+    wv[5] = wv[4];
+    wv[4] = wv[3].wrapping_add(t1);
+    wv[3] = wv[2];
+    wv[2] = wv[1];
+    wv[1] = wv[0];
+    wv[0] = t1.wrapping_add(t2);
+}
+
+
 const SHA0_INIT_STATE: [u32; 5] = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0];
 const SHA1_INIT_STATE: [u32; 5] = SHA0_INIT_STATE;
 const SHA256_INIT_STATE: [u32; 8] = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+const SHA512_INIT_STATE: [u64; 8] = [
+    0x6a09e667f3bcc908,
+    0xbb67ae8584caa73b,
+    0x3c6ef372fe94f82b,
+    0xa54ff53a5f1d36f1,
+    0x510e527fade682d1,
+    0x9b05688c2b3e6c1f,
+    0x1f83d9abfb41bd6b,
+    0x5be0cd19137e2179
+];
 
 
 macro_rules! create_sha {
-    (0) => {create_sha!(@internal 0, u32, 5, 64, 20, 80);};
-    (1) => {create_sha!(@internal 1, u32, 5, 64, 20, 80);};
-    (256) => {create_sha!(@internal 256, u32, 8, 64, 32, 64);};
+    (0) => {create_sha!(@internal 0, u32, 5, 64, 20, 80, u64);};
+    (1) => {create_sha!(@internal 1, u32, 5, 64, 20, 80, u64);};
+    (256) => {create_sha!(@internal 256, u32, 8, 64, 32, 64, u64);};
+    (512) => {create_sha!(@internal 512, u64, 8, 128, 64, 80, u128);};
 
     (@internal
         $sha_number:literal,
@@ -127,7 +210,8 @@ macro_rules! create_sha {
         $state_words_nbr:literal,
         $block_size:literal, // bytes
         $digest_size:literal, // bytes
-        $rounds:literal
+        $rounds:literal,
+        $msg_length_type:ty
     ) => {
         paste! {
             pub struct [< SHA $sha_number Context>] {
@@ -138,7 +222,7 @@ macro_rules! create_sha {
                 context: [< SHA $sha_number Context>],
                 remaining_bytes: [u8; $block_size-1],
                 remaining_bytes_len: usize,
-                msg_length: u64 // in bits
+                msg_length: $msg_length_type // in bits
             }
 
             impl Hash for [< SHA $sha_number>] {
@@ -160,7 +244,7 @@ macro_rules! create_sha {
                     }
                 }
 
-                generic_update_func!([< process_block_sha $sha_number>] u64);
+                generic_update_func!([< process_block_sha $sha_number>] $msg_length_type);
 
                 fn finalise(&mut self) -> Self::DigestType {
                     let mut cur_block = [0; $block_size];
@@ -172,15 +256,15 @@ macro_rules! create_sha {
 
                     // pad
                     cur_block[self.remaining_bytes_len] = 0x80;
-                    if self.remaining_bytes_len >= $block_size-std::mem::size_of::<u64>() {
+                    if self.remaining_bytes_len >= $block_size-std::mem::size_of::<$msg_length_type>() {
                         [< process_block_sha $sha_number>](&mut self.context, &cur_block);
                         cur_block.fill(0);
                     }
 
                     // append msg length
                     let len_bytes = self.msg_length.to_be_bytes();
-                    for i in 0..std::mem::size_of::<u64>() {
-                        cur_block[$block_size-std::mem::size_of::<u64>() + i] = len_bytes[i];
+                    for i in 0..std::mem::size_of::<$msg_length_type>() {
+                        cur_block[$block_size-std::mem::size_of::<$msg_length_type>() + i] = len_bytes[i];
                     }
 
                     // process padded block
@@ -225,6 +309,7 @@ macro_rules! create_sha {
 create_sha!(0);
 create_sha!(1);
 create_sha!(256);
+create_sha!(512);
 
 
 #[cfg(test)]
@@ -438,5 +523,76 @@ mod tests_sha256 {
 
         let res = sha256.finalise();
         assert_eq!(res, [0xb0, 0x36, 0x49, 0x6b, 0x6c, 0x63, 0x0d, 0xe4, 0xac, 0x9a, 0xc3, 0x33, 0x77, 0xc7, 0x0d, 0x58, 0xca, 0x04, 0xb9, 0xac, 0x4d, 0x3c, 0x78, 0xd2, 0xeb, 0x25, 0xe6, 0x84, 0x6f, 0xfd, 0x65, 0x08]);
+    }
+}
+
+#[cfg(test)]
+mod tests_sha512 {
+    use super::*;
+
+    #[test]
+    fn test_abc() {
+        let mut sha512 = SHA512::new(&());
+
+        let data = "abc".as_bytes();
+
+        sha512.update(&data);
+
+        let res = sha512.finalise();
+        assert_eq!(res, [0xdd, 0xaf, 0x35, 0xa1, 0x93, 0x61, 0x7a, 0xba, 0xcc, 0x41, 0x73, 0x49, 0xae, 0x20, 0x41, 0x31, 0x12, 0xe6, 0xfa, 0x4e, 0x89, 0xa9, 0x7e, 0xa2, 0x0a, 0x9e, 0xee, 0xe6, 0x4b, 0x55, 0xd3, 0x9a, 0x21, 0x92, 0x99, 0x2a, 0x27, 0x4f, 0xc1, 0xa8, 0x36, 0xba, 0x3c, 0x23, 0xa3, 0xfe, 0xeb, 0xbd, 0x45, 0x4d, 0x44, 0x23, 0x64, 0x3c, 0xe8, 0x0e, 0x2a, 0x9a, 0xc9, 0x4f, 0xa5, 0x4c, 0xa4, 0x9f]);
+    }
+
+    #[test]
+    fn test_padding_two_blocs() {
+        let mut sha512 = SHA512::new(&());
+
+        let data = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".as_bytes();
+
+        sha512.update(&data);
+
+        let res = sha512.finalise();
+        assert_eq!(res, [0x20, 0x4a, 0x8f, 0xc6, 0xdd, 0xa8, 0x2f, 0x0a, 0x0c, 0xed, 0x7b, 0xeb, 0x8e, 0x08, 0xa4, 0x16, 0x57, 0xc1, 0x6e, 0xf4, 0x68, 0xb2, 0x28, 0xa8, 0x27, 0x9b, 0xe3, 0x31, 0xa7, 0x03, 0xc3, 0x35, 0x96, 0xfd, 0x15, 0xc1, 0x3b, 0x1b, 0x07, 0xf9, 0xaa, 0x1d, 0x3b, 0xea, 0x57, 0x78, 0x9c, 0xa0, 0x31, 0xad, 0x85, 0xc7, 0xa7, 0x1d, 0xd7, 0x03, 0x54, 0xec, 0x63, 0x12, 0x38, 0xca, 0x34, 0x45]);
+    }
+
+    #[test]
+    fn test_big() {
+        let mut sha512 = SHA512::new(&());
+
+        let data = "12345678901234567890123456789012345678901234567890123456789012345678901234567890".as_bytes();
+
+        sha512.update(&data);
+
+        let res = sha512.finalise();
+        assert_eq!(res, [0x72, 0xec, 0x1e, 0xf1, 0x12, 0x4a, 0x45, 0xb0, 0x47, 0xe8, 0xb7, 0xc7, 0x5a, 0x93, 0x21, 0x95, 0x13, 0x5b, 0xb6, 0x1d, 0xe2, 0x4e, 0xc0, 0xd1, 0x91, 0x40, 0x42, 0x24, 0x6e, 0x0a, 0xec, 0x3a, 0x23, 0x54, 0xe0, 0x93, 0xd7, 0x6f, 0x30, 0x48, 0xb4, 0x56, 0x76, 0x43, 0x46, 0x90, 0x0c, 0xb1, 0x30, 0xd2, 0xa4, 0xfd, 0x5d, 0xd1, 0x6a, 0xbb, 0x5e, 0x30, 0xbc, 0xb8, 0x50, 0xde, 0xe8, 0x43]);
+    }
+
+    #[test]
+    fn test_big_splitted() {
+        let mut sha512 = SHA512::new(&());
+
+        let data1 = "1234567".as_bytes();
+        let data2 = "890123456789012345678".as_bytes();
+        let data3 = "901234567890123456789012345678901234567890123456".as_bytes();
+        let data4 = "7890".as_bytes();
+
+        sha512.update(data1);
+        sha512.update(data2);
+        sha512.update(data3);
+        sha512.update(data4);
+
+        let res = sha512.finalise();
+        assert_eq!(res, [0x72, 0xec, 0x1e, 0xf1, 0x12, 0x4a, 0x45, 0xb0, 0x47, 0xe8, 0xb7, 0xc7, 0x5a, 0x93, 0x21, 0x95, 0x13, 0x5b, 0xb6, 0x1d, 0xe2, 0x4e, 0xc0, 0xd1, 0x91, 0x40, 0x42, 0x24, 0x6e, 0x0a, 0xec, 0x3a, 0x23, 0x54, 0xe0, 0x93, 0xd7, 0x6f, 0x30, 0x48, 0xb4, 0x56, 0x76, 0x43, 0x46, 0x90, 0x0c, 0xb1, 0x30, 0xd2, 0xa4, 0xfd, 0x5d, 0xd1, 0x6a, 0xbb, 0x5e, 0x30, 0xbc, 0xb8, 0x50, 0xde, 0xe8, 0x43]);
+    }
+
+    #[test]
+    fn test_bigbig() {
+        let mut sha512 = SHA512::new(&());
+
+        let data = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890".as_bytes();
+
+        sha512.update(&data);
+
+        let res = sha512.finalise();
+        assert_eq!(res, [0x33, 0xf8, 0x90, 0x1b, 0x05, 0x3e, 0x4c, 0xc6, 0x77, 0xd3, 0xcb, 0x41, 0x22, 0xd9, 0x6a, 0xd9, 0xb9, 0x6b, 0x13, 0xbf, 0x76, 0x19, 0x4c, 0xf9, 0x62, 0x48, 0x8b, 0xb4, 0xde, 0x49, 0x98, 0xa7, 0x14, 0x55, 0xcb, 0x31, 0x58, 0x2d, 0xb5, 0x27, 0xad, 0xf7, 0x7a, 0x48, 0x5b, 0x81, 0xcf, 0x5b, 0x72, 0x2a, 0x5e, 0x86, 0x38, 0xeb, 0x6b, 0xe4, 0x87, 0x40, 0x0f, 0x3a, 0xec, 0x00, 0x6e, 0x7c]);
     }
 }
