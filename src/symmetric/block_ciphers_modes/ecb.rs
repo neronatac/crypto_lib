@@ -22,8 +22,8 @@
 //!    P1    P2        Pn
 //! ```
 
-use crate::symetric::block_ciphers_modes::common::BlockChaining;
-use crate::symetric::block_ciphers::common::BlockCipher;
+use crate::symmetric::block_ciphers_modes::common::BlockChaining;
+use crate::symmetric::block_ciphers::common::BlockCipher;
 use crate::utils::{check_cipher_params, extract_array_from_slice};
 
 pub struct ECB {}
@@ -73,7 +73,7 @@ where
 
 #[cfg(test)]
 mod tests_ecb {
-    use crate::symetric::block_ciphers::aes::AES128;
+    use crate::symmetric::block_ciphers::aes::AES128;
     use super::*;
 
     #[test]

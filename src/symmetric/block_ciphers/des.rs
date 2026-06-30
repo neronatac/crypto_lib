@@ -1,6 +1,6 @@
 //! Definition of DES
 
-use crate::symetric::block_ciphers::common::BlockCipher;
+use crate::symmetric::block_ciphers::common::BlockCipher;
 use crate::utils::xor_arrays;
 
 pub struct DES {}

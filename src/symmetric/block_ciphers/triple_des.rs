@@ -1,7 +1,7 @@
 //! Definition of Triple-DES 2K and Triple-DES 3K
 
-use crate::symetric::block_ciphers::common::BlockCipher;
-use crate::symetric::block_ciphers::des::DES;
+use crate::symmetric::block_ciphers::common::BlockCipher;
+use crate::symmetric::block_ciphers::des::DES;
 use crate::utils::extract_array_from_slice;
 
 pub struct TripleDES2K {}

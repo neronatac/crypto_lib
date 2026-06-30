@@ -4,10 +4,11 @@
 //! It allows to use constants to define arrays (e.g. `key: [u8; KEY_SIZE];`).
 //!
 //! Algorithms are reparted in 3 categories:
-//! - [symetric]
-//! - [asymetric]
+//! - [symmetric]
+//! - [asymmetric]
 //! - [hash]
 
-pub mod symetric;
+pub mod symmetric;
+pub mod asymmetric;
 pub mod hash;
 mod utils;

@@ -8,8 +8,8 @@
 //! # Example
 //!
 //! ```
-//! use crate::crypto_lib::symetric::stream_ciphers::common::StreamCipher;
-//! use crypto_lib::symetric::stream_ciphers::salsa::{Salsa20K32, SalsaInitStruct};
+//! use crate::crypto_lib::symmetric::stream_ciphers::common::StreamCipher;
+//! use crypto_lib::symmetric::stream_ciphers::salsa::{Salsa20K32, SalsaInitStruct};
 //!
 //! let nonce = 0x0011223344556677;
 //!

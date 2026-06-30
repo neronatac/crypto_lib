@@ -1,6 +1,6 @@
 //! Shared code between chaining modes
 
-use crate::symetric::block_ciphers::common::BlockCipher;
+use crate::symmetric::block_ciphers::common::BlockCipher;
 
 /// Trait implemented by chaining modes that do not need an IV or anything else.
 pub trait BlockChaining<T>

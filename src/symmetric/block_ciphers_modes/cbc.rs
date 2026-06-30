@@ -30,8 +30,8 @@
 //!          C1        C2        Cn
 //! ```
 
-use crate::symetric::block_ciphers_modes::common::{BlockChainingWithIV};
-use crate::symetric::block_ciphers::common::BlockCipher;
+use crate::symmetric::block_ciphers_modes::common::{BlockChainingWithIV};
+use crate::symmetric::block_ciphers::common::BlockCipher;
 use crate::utils::{check_cipher_params, extract_array_from_slice, xor_arrays};
 
 pub struct CBC{}
@@ -92,7 +92,7 @@ where
 
 #[cfg(test)]
 mod tests_cbc {
-    use crate::symetric::block_ciphers::aes::AES128;
+    use crate::symmetric::block_ciphers::aes::AES128;
     use super::*;
 
     #[test]

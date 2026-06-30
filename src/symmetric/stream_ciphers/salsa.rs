@@ -2,7 +2,7 @@
 
 // https://cr.yp.to/snuffle/spec.pdf
 
-use crate::symetric::stream_ciphers::common::StreamCipher;
+use crate::symmetric::stream_ciphers::common::StreamCipher;
 use crate::utils::xor_arrays;
 
 const SIG: [u32; 4] = [0x61707865, 0x3320646E, 0x79622D32, 0x6B206574];

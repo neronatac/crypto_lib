@@ -1,6 +1,6 @@
 //! Definition of AES128, AES192 and AES256
 
-use crate::symetric::block_ciphers::common::BlockCipher;
+use crate::symmetric::block_ciphers::common::BlockCipher;
 
 type StateAes = [[u8; 4]; 4];
 
