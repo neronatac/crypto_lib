@@ -1,21 +1,28 @@
 use crate::pqc::slh_dsa::adrs::Adrs;
 
-struct WOTSParameters {
-    n: usize,
-    lgw: usize,
+pub struct WOTSPlus<const N: usize, F>
+where
+    F: Fn(&[u8; N], &[u8; 32], &[u8; N]) -> [u8; N]
+{
+    f: F,
 }
 
-pub struct WOTSPlus {
-    parameters: WOTSParameters,
-}
-
-impl WOTSPlus {
-    pub fn new(n: usize, lgw: usize) -> Self {
+impl<const N: usize, F> WOTSPlus<N, F>
+where
+    F: Fn(&[u8; N], &[u8; 32], &[u8; N]) -> [u8; N]
+{
+    pub fn new(f: F) -> Self {
         WOTSPlus{
-            parameters: WOTSParameters {n, lgw},
+            f
         }
     }
+
+    fn chain(&self, x: &[u8; N], i: usize, s: usize, seed: &[u8; N], adrs: &mut Adrs) -> [u8; N] {
+        let tmp = x.clone();
+        for j in i..i + s {
+            adrs.set_hash_address(j as u32);
+            (self.f)(seed, &adrs.as_bytes(), &tmp);
+        }
+        tmp
+    }
 }
-
-
-fn chain(x: &[u8], i: usize, s: usize, seed: &[u8], adrs: Adrs)
