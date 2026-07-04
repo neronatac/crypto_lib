@@ -1,3 +1,5 @@
+use crate::pqc::slh_dsa::adrs::Adrs;
+
 struct WOTSParameters {
     n: usize,
     lgw: usize,
@@ -14,3 +16,6 @@ impl WOTSPlus {
         }
     }
 }
+
+
+fn chain(x: &[u8], i: usize, s: usize, seed: &[u8], adrs: Adrs)
