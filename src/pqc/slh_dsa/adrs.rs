@@ -1,8 +1,9 @@
 //! ADRS structure
 //! See section 4.2 and 4.3
 
+use std::fmt::Debug;
 
-pub trait AdrsTrait {
+pub trait AdrsTrait: Debug + PartialEq + Eq + Clone + Copy {
     type TreeAddrType;
     type LayerAddressType;
     type AsBytesType;
@@ -32,6 +33,7 @@ pub enum AdrsType {
     ForsPrf = 6,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Adrs {
     layer_addr: u32,
     tree_addr: [u8; 12],
@@ -39,6 +41,7 @@ pub struct Adrs {
     contents: [u8; 12],
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct AdrsC { // compressed version of ADRS
     layer_addr: u8,
     tree_addr: [u8; 8],
