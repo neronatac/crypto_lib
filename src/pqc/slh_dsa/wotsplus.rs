@@ -1,6 +1,9 @@
 use std::marker::PhantomData;
+use std::ops::Sub;
 use bytemuck::{cast_slice, Pod};
+use num_traits::{FromPrimitive, ToBytes};
 use crate::pqc::slh_dsa::adrs::{AdrsTrait, AdrsType};
+use crate::pqc::slh_dsa::utils::{base_2b, to_byte, Base2BTypeFromB};
 
 pub struct WOTSPlus<const N: usize, const LGW: usize, ADRS, F, PRF, T>
 where
@@ -10,6 +13,8 @@ where
     T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N], // actually 3rd param is l*n bytes long
 
     [u8; N]: Pod, // to be able to flatten Vec<[u8; N]> to [u8]
+    (): Base2BTypeFromB<LGW>, // to be able to use base_2b with LGW as B param
+    <() as Base2BTypeFromB<LGW>>::Output: Sub<Output = <() as Base2BTypeFromB<LGW>>::Output> + FromPrimitive, // to be able to do arithmetics on the result
 {
     // PhantomData to fakely use ADRS type constraint
     _adrs: PhantomData<ADRS>,
@@ -26,7 +31,7 @@ where
     len: usize,
 }
 
-impl<const N: usize, const LGW: usize, ADRS, F, PRF, T> WOTSPlus<N, LGW, ADRS, F, PRF, T>
+impl<const N: usize, ADRS, F, PRF, T> WOTSPlus<N, 4, ADRS, F, PRF, T>
 where
     ADRS: AdrsTrait,
     F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
@@ -36,12 +41,12 @@ where
     [u8; N]: Pod,
 {
     pub fn new(f_func: F, prf_func: PRF, t_func: T) -> Self {
-        let w = 2usize.pow(LGW as u32);
-        let len1 = (8f32 * N as f32 / LGW as f32).ceil() as usize;
-        let len2 = (((len1 * (w -1)) as f32).log2() / LGW as f32).floor() as usize + 1;
+        let w = 2usize.pow(4u32);
+        let len1 = (8f32 * N as f32 / 4f32).ceil() as usize;
+        let len2 = (((len1 * (w - 1)) as f32).log2() / 4f32).floor() as usize + 1;
         let len = len1 + len2;
 
-        WOTSPlus::<N, LGW, ADRS, F, PRF, T>{
+        WOTSPlus::<N, 4, ADRS, F, PRF, T> {
             _adrs: PhantomData,
             f_func,
             prf_func,
@@ -63,7 +68,7 @@ where
     }
 
     /// WOTS+ Public-Key Generation
-    pub fn wots_pk_gen(self, sk_seed: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
+    pub fn pk_gen(self, sk_seed: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
         let mut sk_adrs = adrs.clone();
         sk_adrs.set_type_and_clear(AdrsType::WotsPrf);
         sk_adrs.set_key_pair_address(adrs.get_key_pair_address());
@@ -81,5 +86,65 @@ where
         wots_pk_adrs.set_key_pair_address(adrs.get_key_pair_address());
 
         (self.t_func)(pk_seed, &wots_pk_adrs, cast_slice(&tmp))
+    }
+
+    /// WOTS+ Signature Generation
+    pub fn sign(self, m: &[u8; N], sk_seed: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> Vec::<[u8; N]> {
+        let mut sig = Vec::<[u8; N]>::with_capacity(self.len);
+
+        let mut csum = 0;
+        let mut msg = base_2b::<4>(m, self.len1);
+
+        for i in 0..self.len1 {
+            csum += self.w - 1 - msg[i] as usize;
+        }
+
+        csum = csum << ((8 - (self.len2 * 4) % 8) % 8);
+
+        let target_len = self.len2 / 2; // * 4 / 8
+        let tmp_bytes = to_byte(csum, target_len);
+        msg.extend(base_2b::<4>(&tmp_bytes, self.len2));
+
+        let mut sk_adrs = adrs.clone();
+        sk_adrs.set_type_and_clear(AdrsType::WotsPrf);
+        sk_adrs.set_key_pair_address(adrs.get_key_pair_address());
+
+        for i in 0..self.len {
+            sk_adrs.set_chain_address(i as u32);
+            let sk = (self.prf_func)(pk_seed, sk_seed, &sk_adrs);
+            adrs.set_chain_address(i as u32);
+            sig.push(self.chain(&sk, 0, msg[i] as usize, pk_seed, adrs));
+        }
+
+        sig
+    }
+
+    /// WOTS+ Public Key From Signature
+    pub fn pk_from_sig(self, sig: Vec::<[u8; N]>, m: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
+        let mut tmp = Vec::<[u8; N]>::with_capacity(self.len);
+
+        let mut csum = 0;
+        let mut msg = base_2b::<4>(m, self.len1);
+
+        for i in 0..self.len1 {
+            csum += self.w - 1 - msg[i] as usize;
+        }
+
+        csum = csum << ((8 - (self.len2 * 4) % 8) % 8);
+
+        let target_len = self.len2 / 2; // * 4 / 8
+        let tmp_bytes = to_byte(csum, target_len);
+        msg.extend(base_2b::<4>(&tmp_bytes, self.len2));
+
+        for i in 0..self.len {
+            adrs.set_chain_address(i as u32);
+            tmp[i] = self.chain(&sig[i], msg[i] as usize, self.w - 1 - msg[i] as usize, pk_seed, adrs);
+        }
+
+        let mut wotspk_adrs = adrs.clone();
+        wotspk_adrs.set_type_and_clear(AdrsType::WotsPk);
+        wotspk_adrs.set_key_pair_address(adrs.get_key_pair_address());
+
+        (self.t_func)(pk_seed, &wotspk_adrs, cast_slice(&tmp))
     }
 }

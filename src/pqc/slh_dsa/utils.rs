@@ -38,3 +38,15 @@ where
 
     baseb
 }
+
+pub fn to_byte<T: num_traits::ToBytes>(x: T, n: usize) -> Vec<u8> {
+    let extend_size = n - x.to_be_bytes().as_ref().len();
+    assert!(extend_size > 0);
+    
+    let mut res = Vec::with_capacity(n);
+    
+    res.extend(std::iter::repeat(0).take(extend_size));
+    res.extend_from_slice(x.to_be_bytes().as_ref());
+    
+    res
+}
