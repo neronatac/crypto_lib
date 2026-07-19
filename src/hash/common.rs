@@ -5,7 +5,9 @@
 /// Each hash has
 /// - 1 constant:
 ///     - DIGEST_SIZE: size of the digest (in bytes)
+///     - BLOCK_SIZE: size of a block (in bytes)
 /// - 2 types:
+///     - `DigestType`: type of hash output
 ///     - `InitStruct`: structure used to initialise the context
 ///     - `Context`: type of the hash context (state and over stuff)
 /// - 3 methods:
