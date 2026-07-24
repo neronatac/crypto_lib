@@ -68,7 +68,7 @@ where
     }
 
     /// WOTS+ Public-Key Generation
-    pub fn pk_gen(self, sk_seed: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
+    pub fn pk_gen(&self, sk_seed: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
         let mut sk_adrs = adrs.clone();
         sk_adrs.set_type_and_clear(AdrsType::WotsPrf);
         sk_adrs.set_key_pair_address(adrs.get_key_pair_address());
@@ -89,7 +89,7 @@ where
     }
 
     /// WOTS+ Signature Generation
-    pub fn sign(self, m: &[u8; N], sk_seed: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> Vec::<[u8; N]> {
+    pub fn sign(&self, m: &[u8; N], sk_seed: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> Vec::<[u8; N]> {
         let mut sig = Vec::<[u8; N]>::with_capacity(self.len);
 
         let mut csum = 0;
@@ -120,7 +120,7 @@ where
     }
 
     /// WOTS+ Public Key From Signature
-    pub fn pk_from_sig(self, sig: Vec::<[u8; N]>, m: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
+    pub fn pk_from_sig(&self, sig: Vec::<[u8; N]>, m: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
         let mut tmp = Vec::<[u8; N]>::with_capacity(self.len);
 
         let mut csum = 0;

@@ -4,3 +4,4 @@
 mod wotsplus;
 mod utils;
 mod adrs;
+mod xmss;

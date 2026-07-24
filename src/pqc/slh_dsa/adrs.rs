@@ -26,7 +26,7 @@ pub trait AdrsTrait: Debug + PartialEq + Eq + Clone + Copy {
 pub enum AdrsType {
     WotsHash = 0,
     WotsPk = 1,
-    TREE = 2,
+    Tree = 2,
     ForsTree = 3,
     ForsRoots = 4,
     WotsPrf = 5,
@@ -65,7 +65,7 @@ impl AdrsTrait for Adrs {
 
     // getters
     fn get_key_pair_address(self) -> u32 {
-        if self.type_ == AdrsType::TREE {
+        if self.type_ == AdrsType::Tree {
             panic!("Unsupported Adrs type for this operation");
         }
 
@@ -73,7 +73,7 @@ impl AdrsTrait for Adrs {
     }
 
     fn get_tree_index(self) -> u32 {
-        if self.type_ == AdrsType::TREE
+        if self.type_ == AdrsType::Tree
             || self.type_ == AdrsType::ForsTree
             || self.type_ == AdrsType::ForsPrf {
             return u32::from_be_bytes(self.contents[8..12].try_into().unwrap());
@@ -96,7 +96,7 @@ impl AdrsTrait for Adrs {
     }
 
     fn set_key_pair_address(&mut self, key_pair_addr: u32) {
-        if self.type_ == AdrsType::TREE {
+        if self.type_ == AdrsType::Tree {
             panic!("Unsupported Adrs type for this operation");
         }
 
@@ -115,7 +115,7 @@ impl AdrsTrait for Adrs {
     fn set_tree_height(&mut self, tree_height: u32) {
         if self.type_ == AdrsType::ForsPrf && tree_height != 0 {
             panic!("tree_height must be 0 in this case")
-        } else if self.type_ != AdrsType::TREE
+        } else if self.type_ != AdrsType::Tree
             && self.type_ != AdrsType::ForsTree {
             panic!("Unsupported Adrs type for this operation");
         }
@@ -172,7 +172,7 @@ impl AdrsTrait for AdrsC {
     }
 
     fn get_key_pair_address(self) -> u32 {
-        if self.type_ == AdrsType::TREE {
+        if self.type_ == AdrsType::Tree {
             panic!("Unsupported Adrs type for this operation");
         }
 
@@ -180,7 +180,7 @@ impl AdrsTrait for AdrsC {
     }
 
     fn get_tree_index(self) -> u32 {
-        if self.type_ == AdrsType::TREE
+        if self.type_ == AdrsType::Tree
             || self.type_ == AdrsType::ForsTree
             || self.type_ == AdrsType::ForsPrf {
             return u32::from_be_bytes(self.contents[8..12].try_into().unwrap());
@@ -203,7 +203,7 @@ impl AdrsTrait for AdrsC {
     }
 
     fn set_key_pair_address(&mut self, key_pair_addr: u32) {
-        if self.type_ == AdrsType::TREE {
+        if self.type_ == AdrsType::Tree {
             panic!("Unsupported Adrs type for this operation");
         }
 
@@ -222,7 +222,7 @@ impl AdrsTrait for AdrsC {
     fn set_tree_height(&mut self, tree_height: u32) {
         if self.type_ == AdrsType::ForsPrf && tree_height != 0 {
             panic!("tree_height must be 0 in this case")
-        } else if self.type_ != AdrsType::TREE
+        } else if self.type_ != AdrsType::Tree
             && self.type_ != AdrsType::ForsTree {
             panic!("Unsupported Adrs type for this operation");
         }
