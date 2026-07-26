@@ -4,6 +4,7 @@ use crate::pqc::slh_dsa::adrs::{AdrsTrait, AdrsType};
 use crate::pqc::slh_dsa::wotsplus::WOTSPlus;
 
 
+#[derive(Clone)]
 pub struct XMSSSignature<const N: usize> {
     sig_wots: Vec::<[u8; N]>,
     auth: Vec::<[u8; N]>,

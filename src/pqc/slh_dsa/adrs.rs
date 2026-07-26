@@ -2,16 +2,17 @@
 //! See section 4.2 and 4.3
 
 use std::fmt::Debug;
+use num_traits::FromBytes;
+use crate::pqc::slh_dsa::adrs::AdrsType::WotsHash;
 
 pub trait AdrsTrait: Debug + PartialEq + Eq + Clone + Copy {
-    type TreeAddrType;
-    type LayerAddressType;
     type AsBytesType;
-    fn new(layer_addr: Self::LayerAddressType, tree_addr: Self::TreeAddrType, type_: AdrsType) -> Self; // getters
+    fn new(layer_addr: usize, tree_addr: &[u8], type_: AdrsType) -> Self;
+    fn new_null() -> Self;
     fn get_key_pair_address(self) -> u32;
     fn get_tree_index(self) -> u32;
-    fn set_layer_address(&mut self, layer_addr: Self::LayerAddressType);
-    fn set_tree_address(&mut self, tree_addr: Self::TreeAddrType);
+    fn set_layer_address(&mut self, layer_addr: usize);
+    fn set_tree_address(&mut self, tree_addr: &[u8]);
     fn set_type_and_clear(&mut self, type_: AdrsType);
     fn set_key_pair_address(&mut self, key_pair_addr: u32);
     fn set_chain_address(&mut self, chain_addr: u32);
@@ -50,15 +51,32 @@ pub struct AdrsC { // compressed version of ADRS
 }
 
 impl AdrsTrait for Adrs {
-    type TreeAddrType = [u8; 12];
-    type LayerAddressType = u32;
     type AsBytesType = [u8; 32];
 
-    fn new(layer_addr: Self::LayerAddressType, tree_addr: Self::TreeAddrType, type_: AdrsType) -> Self {
+    fn new(layer_addr: usize, tree_addr: &[u8], type_: AdrsType) -> Self {
+        if tree_addr.len() > 12 {
+            panic!("tree_addr must be 12 bytes long at maximum");
+        }
+
+        let mut addr = [0u8; 12];
+
+        for i in 0..tree_addr.len() {
+            addr[12-i] = tree_addr[tree_addr.len()- 1 - i];
+        }
+
         Self {
-            layer_addr,
-            tree_addr,
+            layer_addr: layer_addr as u32,
+            tree_addr: addr,
             type_,
+            contents: [0; 12],
+        }
+    }
+
+    fn new_null() -> Self {
+        Adrs{
+            layer_addr: 0,
+            tree_addr: [0; 12],
+            type_: AdrsType::WotsHash,
             contents: [0; 12],
         }
     }
@@ -82,12 +100,22 @@ impl AdrsTrait for Adrs {
         panic!("Unsupported Adrs type for this operation");
     }
 
-    fn set_layer_address(&mut self, layer_addr: Self::LayerAddressType) {
-        self.layer_addr = layer_addr;
+    fn set_layer_address(&mut self, layer_addr: usize) {
+        self.layer_addr = layer_addr as u32;
     }
 
-    fn set_tree_address(&mut self, tree_addr: Self::TreeAddrType) {
-        self.tree_addr = tree_addr;
+    fn set_tree_address(&mut self, tree_addr: &[u8]) {
+        if tree_addr.len() > 12 {
+            panic!("tree_addr must be 12 bytes long at maximum");
+        }
+
+        let mut addr = [0u8; 12];
+
+        for i in 0..tree_addr.len() {
+            addr[12-i] = tree_addr[tree_addr.len()- 1 - i];
+        }
+
+        self.tree_addr = addr;
     }
 
     fn set_type_and_clear(&mut self, type_: AdrsType) {
@@ -126,8 +154,7 @@ impl AdrsTrait for Adrs {
     fn set_hash_address(&mut self, hash_address: u32) {
         if self.type_ == AdrsType::WotsPrf && hash_address != 0 {
             panic!("hash_address must be 0 in this case")
-        }
-        else if self.type_ != AdrsType::WotsHash {
+        } else if self.type_ != AdrsType::WotsHash {
             panic!("Unsupported Adrs type for this operation");
         }
 
@@ -158,15 +185,32 @@ impl AdrsTrait for Adrs {
 }
 
 impl AdrsTrait for AdrsC {
-    type TreeAddrType = [u8; 8];
-    type LayerAddressType = u8;
     type AsBytesType = [u8; 22];
 
-    fn new(layer_addr: Self::LayerAddressType, tree_addr: Self::TreeAddrType, type_: AdrsType) -> Self {
+    fn new(layer_addr: usize, tree_addr: &[u8], type_: AdrsType) -> Self {
+        if tree_addr.len() > 8 {
+            panic!("tree_addr must be 8 bytes long at maximum");
+        }
+
+        let mut addr = [0u8; 8];
+
+        for i in 0..tree_addr.len() {
+            addr[8-i] = tree_addr[tree_addr.len()- 1 - i];
+        }
+
         Self {
-            layer_addr,
-            tree_addr,
+            layer_addr: layer_addr as u8,
+            tree_addr: addr,
             type_,
+            contents: [0; 12],
+        }
+    }
+
+    fn new_null() -> Self {
+        AdrsC{
+            layer_addr: 0,
+            tree_addr: [0; 8],
+            type_: AdrsType::WotsHash,
             contents: [0; 12],
         }
     }
@@ -189,12 +233,22 @@ impl AdrsTrait for AdrsC {
         panic!("Unsupported Adrs type for this operation");
     }
 
-    fn set_layer_address(&mut self, layer_addr: Self::LayerAddressType) {
-        self.layer_addr = layer_addr;
+    fn set_layer_address(&mut self, layer_addr: usize) {
+        self.layer_addr = layer_addr as u8;
     }
 
-    fn set_tree_address(&mut self, tree_addr: Self::TreeAddrType) {
-        self.tree_addr = tree_addr;
+    fn set_tree_address(&mut self, tree_addr: &[u8]) {
+        if tree_addr.len() > 8 {
+            panic!("tree_addr must be 12 bytes long at maximum");
+        }
+
+        let mut addr = [0u8; 8];
+
+        for i in 0..tree_addr.len() {
+            addr[8-i] = tree_addr[tree_addr.len()- 1 - i];
+        }
+
+        self.tree_addr = addr;
     }
 
     fn set_type_and_clear(&mut self, type_: AdrsType) {
