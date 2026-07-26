@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::ops::Sub;
 use bytemuck::{cast_slice, Pod};
-use num_traits::{FromPrimitive, ToBytes};
+use num_traits::{FromPrimitive};
 use crate::pqc::slh_dsa::adrs::{AdrsTrait, AdrsType};
 use crate::pqc::slh_dsa::utils::{base_2b, to_byte, Base2BTypeFromB};
 
