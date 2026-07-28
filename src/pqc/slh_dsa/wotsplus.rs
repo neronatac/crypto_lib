@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
-use std::ops::Sub;
 use bytemuck::{cast_slice, Pod};
-use num_traits::{FromPrimitive};
 use crate::pqc::slh_dsa::adrs::{AdrsTrait, AdrsType};
-use crate::pqc::slh_dsa::utils::{base_2b, to_byte, Base2BTypeFromB};
+use crate::pqc::slh_dsa::utils::{base_2b, to_byte};
 
 pub struct WOTSPlus<const N: usize, const LGW: usize, ADRS, F, PRF, T>
 where
@@ -13,8 +11,6 @@ where
     T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N], // actually 3rd param is l*n bytes long
 
     [u8; N]: Pod, // to be able to flatten Vec<[u8; N]> to [u8]
-    (): Base2BTypeFromB<LGW>, // to be able to use base_2b with LGW as B param
-    <() as Base2BTypeFromB<LGW>>::Output: Sub<Output = <() as Base2BTypeFromB<LGW>>::Output> + FromPrimitive, // to be able to do arithmetics on the result
 {
     // PhantomData to fakely use ADRS type constraint
     _adrs: PhantomData<ADRS>,
@@ -93,7 +89,7 @@ where
         let mut sig = Vec::<[u8; N]>::with_capacity(self.len);
 
         let mut csum = 0;
-        let mut msg = base_2b::<4>(m, self.len1);
+        let mut msg = base_2b(m, 4, self.len1);
 
         for i in 0..self.len1 {
             csum += self.w - 1 - msg[i] as usize;
@@ -103,7 +99,7 @@ where
 
         let target_len = self.len2 / 2; // * 4 / 8
         let tmp_bytes = to_byte(csum, target_len);
-        msg.extend(base_2b::<4>(&tmp_bytes, self.len2));
+        msg.extend(base_2b(&tmp_bytes, 4, self.len2));
 
         let mut sk_adrs = adrs.clone();
         sk_adrs.set_type_and_clear(AdrsType::WotsPrf);
@@ -124,7 +120,7 @@ where
         let mut tmp = Vec::<[u8; N]>::with_capacity(self.len);
 
         let mut csum = 0;
-        let mut msg = base_2b::<4>(m, self.len1);
+        let mut msg = base_2b(m, 4, self.len1);
 
         for i in 0..self.len1 {
             csum += self.w - 1 - msg[i] as usize;
@@ -134,7 +130,7 @@ where
 
         let target_len = self.len2 / 2; // * 4 / 8
         let tmp_bytes = to_byte(csum, target_len);
-        msg.extend(base_2b::<4>(&tmp_bytes, self.len2));
+        msg.extend(base_2b(&tmp_bytes, 4, self.len2));
 
         for i in 0..self.len {
             adrs.set_chain_address(i as u32);

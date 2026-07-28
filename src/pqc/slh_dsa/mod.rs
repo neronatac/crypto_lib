@@ -6,3 +6,4 @@ mod utils;
 mod adrs;
 mod xmss;
 mod hypertree;
+mod fors;
