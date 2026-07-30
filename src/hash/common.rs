@@ -19,17 +19,15 @@
 /// (i.e. conceptually, `update(a | b) == update(a), update(b)`).
 ///
 /// Do not call `update` after `finalise` was called.
-pub trait Hash {
-    const DIGEST_SIZE: usize;
+pub trait Hash<const DIGEST_SIZE: usize> {
     const BLOCK_SIZE: usize;
 
-    type DigestType;   // &[u8; xxx]
     type InitStruct;
     type Context;
 
     fn new(init_struct: &Self::InitStruct) -> Self;
     fn update(&mut self, data: &[u8]);
-    fn finalise(&mut self) -> Self::DigestType;
+    fn finalise(&mut self) -> [u8; DIGEST_SIZE];
 }
 
 macro_rules! generic_update_func {
@@ -37,31 +35,31 @@ macro_rules! generic_update_func {
     ($process_block_fn:ident $($msg_length_type:ty)?) => {
         fn update(&mut self, data: &[u8]) {
             let mut cur_block = [0; Self::BLOCK_SIZE];
-    
+
             $(
                 // update msg_length if necessary
                 self.msg_length += data.len() as $msg_length_type * 8;
             )?
-    
+
             // take remaining bytes from previous uncompleted block
             for i in 0..self.remaining_bytes_len {
                 cur_block[i] = self.remaining_bytes[i];
             }
-    
+
             // process blocks until the end
             let mut offset = 0;
             while offset < data.len() {
                 cur_block[self.remaining_bytes_len] = data[offset];
-    
+
                 self.remaining_bytes_len += 1;
                 offset += 1;
-                
+
                 if self.remaining_bytes_len == Self::BLOCK_SIZE {
                     $process_block_fn(&mut self.context, &cur_block);
                     self.remaining_bytes_len = 0;
                 }
             }
-            
+
             // save remaining bytes
             for i in 0..self.remaining_bytes_len {
                 self.remaining_bytes[i] = cur_block[i];

@@ -1,7 +1,7 @@
-use std::marker::PhantomData;
-use bytemuck::{cast_slice, Pod};
 use crate::pqc::slh_dsa::adrs::{AdrsTrait, AdrsType};
 use crate::pqc::slh_dsa::utils::{base_2b, to_byte};
+use bytemuck::{cast_slice, Pod};
+use std::marker::PhantomData;
 
 pub struct WOTSPlus<const N: usize, const LGW: usize, ADRS, F, PRF, T>
 where
@@ -24,7 +24,7 @@ where
     w: usize,
     len1: usize,
     len2: usize,
-    len: usize,
+    pub len: usize,
 }
 
 impl<const N: usize, ADRS, F, PRF, T> WOTSPlus<N, 4, ADRS, F, PRF, T>
@@ -54,7 +54,14 @@ where
         }
     }
 
-    fn chain(&self, x: &[u8; N], i: usize, s: usize, pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
+    fn chain(
+        &self,
+        x: &[u8; N],
+        i: usize,
+        s: usize,
+        pk_seed: &[u8; N],
+        adrs: &mut ADRS,
+    ) -> [u8; N] {
         let tmp = *x; // copy
         for j in i..i + s {
             adrs.set_hash_address(j as u32);
@@ -85,7 +92,13 @@ where
     }
 
     /// WOTS+ Signature Generation
-    pub fn sign(&self, m: &[u8; N], sk_seed: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> Vec::<[u8; N]> {
+    pub fn sign(
+        &self,
+        m: &[u8; N],
+        sk_seed: &[u8; N],
+        pk_seed: &[u8; N],
+        adrs: &mut ADRS,
+    ) -> Vec<[u8; N]> {
         let mut sig = Vec::<[u8; N]>::with_capacity(self.len);
 
         let mut csum = 0;
@@ -116,7 +129,13 @@ where
     }
 
     /// WOTS+ Public Key From Signature
-    pub fn pk_from_sig(&self, sig: Vec::<[u8; N]>, m: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
+    pub fn pk_from_sig(
+        &self,
+        sig: Vec<[u8; N]>,
+        m: &[u8; N],
+        pk_seed: &[u8; N],
+        adrs: &mut ADRS,
+    ) -> [u8; N] {
         let mut tmp = Vec::<[u8; N]>::with_capacity(self.len);
 
         let mut csum = 0;
@@ -134,7 +153,13 @@ where
 
         for i in 0..self.len {
             adrs.set_chain_address(i as u32);
-            tmp[i] = self.chain(&sig[i], msg[i] as usize, self.w - 1 - msg[i] as usize, pk_seed, adrs);
+            tmp[i] = self.chain(
+                &sig[i],
+                msg[i] as usize,
+                self.w - 1 - msg[i] as usize,
+                pk_seed,
+                adrs,
+            );
         }
 
         let mut wotspk_adrs = adrs.clone();

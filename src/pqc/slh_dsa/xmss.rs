@@ -1,15 +1,19 @@
-use std::marker::PhantomData;
-use bytemuck::Pod;
 use crate::pqc::slh_dsa::adrs::{AdrsTrait, AdrsType};
 use crate::pqc::slh_dsa::wotsplus::WOTSPlus;
-
+use bytemuck::Pod;
+use std::marker::PhantomData;
 
 #[derive(Clone)]
 pub struct XMSSSignature<const N: usize> {
-    sig_wots: Vec::<[u8; N]>,
-    auth: Vec::<[u8; N]>,
+    sig_wots: Vec<[u8; N]>,
+    auth: Vec<[u8; N]>,
 }
 
+impl<const N: usize> XMSSSignature<N> {
+    pub fn len(&self) -> usize {
+        (self.sig_wots.len() + self.auth.len()) * N
+    }
+}
 
 pub struct XMSS<const N: usize, const H_PRIME: usize, ADRS, F, PRF, T, H>
 where
@@ -29,7 +33,7 @@ where
     h_func: H,
 
     // wots structure
-    wots: WOTSPlus<N, 4, ADRS, F, PRF, T>
+    pub wots: WOTSPlus<N, 4, ADRS, F, PRF, T>,
 }
 
 impl<const N: usize, const H_PRIME: usize, ADRS, F, PRF, T, H> XMSS<N, H_PRIME, ADRS, F, PRF, T, H>
@@ -51,7 +55,14 @@ where
         }
     }
 
-    fn node(&self, sk_seed: &[u8; N], i: u32, z: u32, pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
+    pub fn node(
+        &self,
+        sk_seed: &[u8; N],
+        i: u32,
+        z: u32,
+        pk_seed: &[u8; N],
+        adrs: &mut ADRS,
+    ) -> [u8; N] {
         if z == 0 {
             adrs.set_type_and_clear(AdrsType::WotsHash);
             adrs.set_key_pair_address(i);
@@ -69,7 +80,14 @@ where
         }
     }
 
-    pub fn sign(&self, m: &[u8; N], sk_seed: &[u8; N], idx: u32, pk_seed: &[u8; N], adrs: &mut ADRS) -> XMSSSignature<N> {
+    pub fn sign(
+        &self,
+        m: &[u8; N],
+        sk_seed: &[u8; N],
+        idx: u32,
+        pk_seed: &[u8; N],
+        adrs: &mut ADRS,
+    ) -> XMSSSignature<N> {
         let mut auth = Vec::with_capacity(H_PRIME * N);
         for j in 0..H_PRIME {
             let k = (idx as f32 / 2u32.pow(j as u32) as f32).floor() as u32;
@@ -81,13 +99,17 @@ where
 
         let sig_wots = self.wots.sign(m, sk_seed, pk_seed, adrs);
 
-        XMSSSignature {
-            sig_wots,
-            auth
-        }
+        XMSSSignature { sig_wots, auth }
     }
 
-    pub fn pk_from_sig(&self, idx: u32, sig_xmss: &XMSSSignature<N>, m: &[u8; N], pk_seed: &[u8; N], adrs: &mut ADRS) -> [u8; N] {
+    pub fn pk_from_sig(
+        &self,
+        idx: u32,
+        sig_xmss: &XMSSSignature<N>,
+        m: &[u8; N],
+        pk_seed: &[u8; N],
+        adrs: &mut ADRS,
+    ) -> [u8; N] {
         adrs.set_type_and_clear(AdrsType::WotsHash);
         adrs.set_key_pair_address(idx);
         let sig = sig_xmss.sig_wots.clone();
@@ -107,7 +129,7 @@ where
             if tmp % 2 == 0 {
                 adrs.set_tree_index(adrs.get_tree_index() / 2);
             } else {
-                adrs.set_tree_index((adrs.get_tree_index() - 1)/ 2);
+                adrs.set_tree_index((adrs.get_tree_index() - 1) / 2);
             }
 
             let concat = {
