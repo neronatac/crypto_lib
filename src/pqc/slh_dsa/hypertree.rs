@@ -14,38 +14,32 @@ impl<const N: usize> HypertreeSignature<N> {
     }
 }
 
-pub struct Hypertree<const N: usize, const D: usize, const H_PRIME: usize, ADRS, F, PRF, T, H>
+pub struct Hypertree<const N: usize, const D: usize, const H_PRIME: usize, ADRS>
 where
     ADRS: AdrsTrait,
-
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
-    H: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N], // actually 3rd param is 2*n bytes long
-
     [u8; N]: Pod, // required by WOTS: to be able to flatten Vec<[u8; N]> to [u8]
 {
     // PhantomData to fakely use ADRS type constraint
     _adrs: PhantomData<ADRS>,
 
     // XMSS structure
-    xmss: XMSS<N, H_PRIME, ADRS, F, PRF, T, H>,
+    xmss: XMSS<N, H_PRIME, ADRS>,
 }
 
-impl<const N: usize, const D: usize, const H_PRIME: usize, ADRS, F, PRF, T, H>
-    Hypertree<N, D, H_PRIME, ADRS, F, PRF, T, H>
+impl<const N: usize, const D: usize, const H_PRIME: usize, ADRS> Hypertree<N, D, H_PRIME, ADRS>
 where
     ADRS: AdrsTrait,
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
-    H: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
     [u8; N]: Pod,
 {
-    pub fn new(f_func: F, prf_func: PRF, t_func: T, h_func: H) -> Self {
-        let xmss = XMSS::<N, H_PRIME, ADRS, F, PRF, T, H>::new(f_func, prf_func, t_func, h_func);
+    pub fn new(
+        f_func: fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
+        prf_func: fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
+        t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+        h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+    ) -> Self {
+        let xmss = XMSS::<N, H_PRIME, ADRS>::new(f_func, prf_func, t_func, h_func);
 
-        Hypertree::<N, D, H_PRIME, ADRS, F, PRF, T, H> {
+        Hypertree::<N, D, H_PRIME, ADRS> {
             _adrs: PhantomData,
             xmss,
         }

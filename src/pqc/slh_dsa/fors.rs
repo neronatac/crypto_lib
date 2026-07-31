@@ -21,39 +21,33 @@ impl<const N: usize, const A: usize> FORSSignature<N, A> {
     }
 }
 
-pub struct FORS<const N: usize, const K: usize, const A: usize, ADRS, F, PRF, T, H>
+pub struct FORS<const N: usize, const K: usize, const A: usize, ADRS>
 where
     ADRS: AdrsTrait,
-
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
-    H: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N], // actually 3rd param is 2*n bytes long
-
     [u8; N]: Pod, // to be able to flatten Vec<[u8; N]> to [u8]
 {
     // PhantomData to fakely use ADRS type constraint
     _adrs: PhantomData<ADRS>,
 
     // functions used by FORS
-    f_func: F,
-    prf_func: PRF,
-    t_func: T,
-    h_func: H,
+    f_func: fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
+    prf_func: fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
+    t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+    h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
 }
 
-impl<const N: usize, const K: usize, const A: usize, ADRS, F, PRF, T, H>
-    FORS<N, K, A, ADRS, F, PRF, T, H>
+impl<const N: usize, const K: usize, const A: usize, ADRS> FORS<N, K, A, ADRS>
 where
     ADRS: AdrsTrait,
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
-    H: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
     [u8; N]: Pod,
 {
-    pub fn new(f_func: F, prf_func: PRF, t_func: T, h_func: H) -> Self {
-        FORS::<N, K, A, ADRS, F, PRF, T, H> {
+    pub fn new(
+        f_func: fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
+        prf_func: fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
+        t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+        h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+    ) -> Self {
+        FORS::<N, K, A, ADRS> {
             _adrs: PhantomData,
             f_func,
             prf_func,

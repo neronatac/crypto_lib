@@ -15,40 +15,35 @@ impl<const N: usize> XMSSSignature<N> {
     }
 }
 
-pub struct XMSS<const N: usize, const H_PRIME: usize, ADRS, F, PRF, T, H>
+pub struct XMSS<const N: usize, const H_PRIME: usize, ADRS>
 where
     ADRS: AdrsTrait,
-
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
-    H: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N], // actually 3rd param is 2*n bytes long
-
     [u8; N]: Pod, // required by WOTS: to be able to flatten Vec<[u8; N]> to [u8]
 {
     // PhantomData to fakely use ADRS type constraint
     _adrs: PhantomData<ADRS>,
 
     // functions used by XMSS
-    h_func: H,
+    h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
 
     // wots structure
-    pub wots: WOTSPlus<N, 4, ADRS, F, PRF, T>,
+    pub wots: WOTSPlus<N, 4, ADRS>,
 }
 
-impl<const N: usize, const H_PRIME: usize, ADRS, F, PRF, T, H> XMSS<N, H_PRIME, ADRS, F, PRF, T, H>
+impl<const N: usize, const H_PRIME: usize, ADRS> XMSS<N, H_PRIME, ADRS>
 where
     ADRS: AdrsTrait,
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
-    H: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
     [u8; N]: Pod,
 {
-    pub fn new(f_func: F, prf_func: PRF, t_func: T, h_func: H) -> Self {
-        let wots = WOTSPlus::<N, 4, ADRS, F, PRF, T>::new(f_func, prf_func, t_func);
+    pub fn new(
+        f_func: fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
+        prf_func: fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
+        t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+        h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+    ) -> Self {
+        let wots = WOTSPlus::<N, 4, ADRS>::new(f_func, prf_func, t_func);
 
-        XMSS::<N, H_PRIME, ADRS, F, PRF, T, H> {
+        XMSS::<N, H_PRIME, ADRS> {
             _adrs: PhantomData,
             h_func,
             wots,

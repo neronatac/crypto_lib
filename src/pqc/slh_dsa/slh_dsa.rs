@@ -42,43 +42,24 @@ pub struct SLHDSA<
     const K: usize,
     const H: usize,
     ADRS,
-    F,
-    PRF,
-    T,
-    HFUNC,
-    PRFMSG,
-    HMSG,
 > where
     ADRS: AdrsTrait,
-
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N] + Copy,
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N] + Copy,
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N] + Copy,
-    HFUNC: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N] + Copy, // actually 3rd param is 2*n bytes long
-    PRFMSG: Fn(&[u8; N], &[u8; N], &[u8]) -> [u8; N] + Copy,
-    HMSG: Fn(&[u8; N], &[u8; N], &[u8; N], &[u8]) -> Vec<u8> + Copy,
-
     [u8; N]: Pod, // required by FORS and hypertree
 {
     // PhantomData to fakely use ADRS type constraint
     _adrs: PhantomData<ADRS>,
 
-    // functions used by FORS
-    f_func: F,
-    prf_func: PRF,
-    t_func: T,
-    h_func: HFUNC,
-    prf_msg_func: PRFMSG,
-    h_msg_func: HMSG,
+    prf_msg_func: fn(&[u8; N], &[u8; N], &[u8]) -> [u8; N],
+    h_msg_func: fn(&[u8; N], &[u8; N], &[u8; N], &[u8]) -> Vec<u8>,
 
     // XMSS structure
-    xmss: XMSS<N, H_PRIME, ADRS, F, PRF, T, HFUNC>,
+    xmss: XMSS<N, H_PRIME, ADRS>,
 
     // FORS structure
-    fors: FORS<N, K, A, ADRS, F, PRF, T, HFUNC>,
+    fors: FORS<N, K, A, ADRS>,
 
     // hypertree structure
-    ht: Hypertree<N, D, H_PRIME, ADRS, F, PRF, T, HFUNC>,
+    ht: Hypertree<N, D, H_PRIME, ADRS>,
 }
 
 impl<
@@ -89,46 +70,25 @@ impl<
         const K: usize,
         const H: usize,
         ADRS,
-        F,
-        PRF,
-        T,
-        HFUNC,
-        PRFMSG,
-        HMSG,
-    > SLHDSA<N, D, H_PRIME, A, K, H, ADRS, F, PRF, T, HFUNC, PRFMSG, HMSG>
+    > SLHDSA<N, D, H_PRIME, A, K, H, ADRS>
 where
     ADRS: AdrsTrait,
-
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N] + Copy,
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N] + Copy,
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N] + Copy,
-    HFUNC: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N] + Copy,
-    PRFMSG: Fn(&[u8; N], &[u8; N], &[u8]) -> [u8; N] + Copy,
-    HMSG: Fn(&[u8; N], &[u8; N], &[u8; N], &[u8]) -> Vec<u8> + Copy,
-
     [u8; N]: Pod,
 {
     pub fn new(
-        f_func: F,
-        prf_func: PRF,
-        t_func: T,
-        h_func: HFUNC,
-        prf_msg_func: PRFMSG,
-        h_msg_func: HMSG,
+        f_func: fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
+        prf_func: fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
+        t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+        h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+        prf_msg_func: fn(&[u8; N], &[u8; N], &[u8]) -> [u8; N],
+        h_msg_func: fn(&[u8; N], &[u8; N], &[u8; N], &[u8]) -> Vec<u8>,
     ) -> Self {
-        let xmss =
-            XMSS::<N, H_PRIME, ADRS, F, PRF, T, HFUNC>::new(f_func, prf_func, t_func, h_func);
-        let fors = FORS::<N, K, A, ADRS, F, PRF, T, HFUNC>::new(f_func, prf_func, t_func, h_func);
-        let ht = Hypertree::<N, D, H_PRIME, ADRS, F, PRF, T, HFUNC>::new(
-            f_func, prf_func, t_func, h_func,
-        );
+        let xmss = XMSS::<N, H_PRIME, ADRS>::new(f_func, prf_func, t_func, h_func);
+        let fors = FORS::<N, K, A, ADRS>::new(f_func, prf_func, t_func, h_func);
+        let ht = Hypertree::<N, D, H_PRIME, ADRS>::new(f_func, prf_func, t_func, h_func);
 
-        SLHDSA::<N, D, H_PRIME, A, K, H, ADRS, F, PRF, T, HFUNC, PRFMSG, HMSG> {
+        SLHDSA::<N, D, H_PRIME, A, K, H, ADRS> {
             _adrs: PhantomData,
-            f_func,
-            prf_func,
-            t_func,
-            h_func,
             prf_msg_func,
             h_msg_func,
             xmss,

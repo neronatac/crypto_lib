@@ -3,22 +3,18 @@ use crate::pqc::slh_dsa::utils::{base_2b, to_byte};
 use bytemuck::{cast_slice, Pod};
 use std::marker::PhantomData;
 
-pub struct WOTSPlus<const N: usize, const LGW: usize, ADRS, F, PRF, T>
+pub struct WOTSPlus<const N: usize, const LGW: usize, ADRS>
 where
     ADRS: AdrsTrait,
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N], // actually 3rd param is l*n bytes long
-
     [u8; N]: Pod, // to be able to flatten Vec<[u8; N]> to [u8]
 {
     // PhantomData to fakely use ADRS type constraint
     _adrs: PhantomData<ADRS>,
 
     // functions used by WOTS+
-    f_func: F,
-    prf_func: PRF,
-    t_func: T,
+    f_func: fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
+    prf_func: fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
+    t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
 
     // additional values derived from n and lgw
     w: usize,
@@ -27,22 +23,22 @@ where
     pub len: usize,
 }
 
-impl<const N: usize, ADRS, F, PRF, T> WOTSPlus<N, 4, ADRS, F, PRF, T>
+impl<const N: usize, ADRS> WOTSPlus<N, 4, ADRS>
 where
     ADRS: AdrsTrait,
-    F: Fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
-    PRF: Fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
-    T: Fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
-
     [u8; N]: Pod,
 {
-    pub fn new(f_func: F, prf_func: PRF, t_func: T) -> Self {
+    pub fn new(
+        f_func: fn(&[u8; N], &ADRS, &[u8; N]) -> [u8; N],
+        prf_func: fn(&[u8; N], &[u8; N], &ADRS) -> [u8; N],
+        t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
+    ) -> Self {
         let w = 2usize.pow(4u32);
         let len1 = (8f32 * N as f32 / 4f32).ceil() as usize;
         let len2 = (((len1 * (w - 1)) as f32).log2() / 4f32).floor() as usize + 1;
         let len = len1 + len2;
 
-        WOTSPlus::<N, 4, ADRS, F, PRF, T> {
+        WOTSPlus::<N, 4, ADRS> {
             _adrs: PhantomData,
             f_func,
             prf_func,
