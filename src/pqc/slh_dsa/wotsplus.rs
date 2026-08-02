@@ -77,7 +77,7 @@ where
             sk_adrs.set_chain_address(i as u32);
             let sk = (self.prf_func)(pk_seed, sk_seed, &sk_adrs);
             adrs.set_chain_address(i as u32);
-            tmp[i] = self.chain(&sk, 0, self.w - 1, pk_seed, adrs);
+            tmp.push(self.chain(&sk, 0, self.w - 1, pk_seed, adrs));
         }
 
         let mut wots_pk_adrs = adrs.clone();

@@ -15,10 +15,30 @@ pub struct SLHDSAPrivateKey<const N: usize> {
     pk_root: [u8; N],
 }
 
+impl<const N: usize> SLHDSAPrivateKey<N> {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::with_capacity(4 * N);
+        res.extend_from_slice(&self.sk_seed);
+        res.extend_from_slice(&self.sk_prf);
+        res.extend_from_slice(&self.pk_seed);
+        res.extend_from_slice(&self.pk_root);
+        res
+    }
+}
+
 #[derive(Clone)]
 pub struct SLHDSAPublicKey<const N: usize> {
     pk_seed: [u8; N],
     pk_root: [u8; N],
+}
+
+impl<const N: usize> SLHDSAPublicKey<N> {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::with_capacity(2 * N);
+        res.extend_from_slice(&self.pk_seed);
+        res.extend_from_slice(&self.pk_root);
+        res
+    }
 }
 
 #[derive(Clone)]
@@ -222,7 +242,7 @@ where
     }
 
     // internal functions
-    fn keygen_internal(
+    pub(crate) fn keygen_internal(
         &self,
         sk_seed: &[u8; N],
         sk_prf: &[u8; N],
