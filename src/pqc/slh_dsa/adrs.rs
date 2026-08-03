@@ -112,7 +112,7 @@ impl AdrsTrait for Adrs {
         let mut addr = [0u8; 12];
 
         for i in 0..tree_addr.len() {
-            addr[12-i] = tree_addr[tree_addr.len()- 1 - i];
+            addr[11 - i] = tree_addr[tree_addr.len() - 1 - i];
         }
 
         self.tree_addr = addr;
@@ -239,13 +239,13 @@ impl AdrsTrait for AdrsC {
 
     fn set_tree_address(&mut self, tree_addr: &[u8]) {
         if tree_addr.len() > 8 {
-            panic!("tree_addr must be 12 bytes long at maximum");
+            panic!("tree_addr must be 8 bytes long at maximum");
         }
 
         let mut addr = [0u8; 8];
 
         for i in 0..tree_addr.len() {
-            addr[8-i] = tree_addr[tree_addr.len()- 1 - i];
+            addr[7 - i] = tree_addr[tree_addr.len() - 1 - i];
         }
 
         self.tree_addr = addr;

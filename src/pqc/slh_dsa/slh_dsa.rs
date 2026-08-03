@@ -6,6 +6,7 @@ use crate::pqc::slh_dsa::xmss::XMSS;
 use bytemuck::Pod;
 use rand::RngExt;
 use std::marker::PhantomData;
+use crate::pqc::slh_dsa::utils::to_int;
 
 #[derive(Clone)]
 pub struct SLHDSAPrivateKey<const N: usize> {
@@ -24,6 +25,15 @@ impl<const N: usize> SLHDSAPrivateKey<N> {
         res.extend_from_slice(&self.pk_root);
         res
     }
+
+    pub fn from_bytes(bytes: &[u8]) -> SLHDSAPrivateKey<N> {
+        SLHDSAPrivateKey{
+            sk_seed: bytes[0..N].try_into().unwrap(),
+            sk_prf: bytes[N..2*N].try_into().unwrap(),
+            pk_seed: bytes[2*N..3*N].try_into().unwrap(),
+            pk_root: bytes[3*N..4*N].try_into().unwrap(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -39,6 +49,13 @@ impl<const N: usize> SLHDSAPublicKey<N> {
         res.extend_from_slice(&self.pk_root);
         res
     }
+
+    pub fn from_bytes(bytes: &[u8]) -> SLHDSAPublicKey<N> {
+        SLHDSAPublicKey{
+            pk_seed: bytes[0..N].try_into().unwrap(),
+            pk_root: bytes[N..2*N].try_into().unwrap(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -51,6 +68,14 @@ pub struct SLHDSASignature<const N: usize, const A: usize> {
 impl<const N: usize, const A: usize> SLHDSASignature<N, A> {
     pub fn len(&self) -> usize {
         N + self.sig_fors.len() + self.sig_ht.len()
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::with_capacity(self.len());
+        res.extend_from_slice(&self.r);
+        res.extend_from_slice(&self.sig_fors.as_bytes());
+        res.extend_from_slice(&self.sig_ht.as_bytes());
+        res
     }
 }
 
@@ -349,17 +374,17 @@ where
     // helpers
     fn slice_digest(&self, digest: Vec<u8>) -> (Vec<u8>, u32, u32) {
         let md_idx = ((K * A) as f32 / 8f32).ceil() as usize;
-        let md = &digest[0..md_idx + 1];
+        let md = &digest[0..md_idx];
 
         let idx_tree_idx = ((H as f32 - (H as f32 / D as f32)) / 8f32).ceil() as usize;
-        let tmp_idx_tree = &digest[md_idx..md_idx + idx_tree_idx + 1];
+        let tmp_idx_tree = &digest[md_idx..md_idx + idx_tree_idx];
 
         let idx_leaf_idx = (H as f32 / (8 * D) as f32).ceil() as usize;
-        let tmp_idx_leaf = &digest[md_idx + idx_tree_idx..md_idx + idx_tree_idx + idx_leaf_idx + 1];
+        let tmp_idx_leaf = &digest[md_idx + idx_tree_idx..md_idx + idx_tree_idx + idx_leaf_idx];
 
-        let idx_tree = u32::from_be_bytes(tmp_idx_tree.try_into().unwrap()) % (H - H / D) as u32;
-        let idx_leaf = u32::from_be_bytes(tmp_idx_leaf.try_into().unwrap()) % (H / D) as u32;
+        let idx_tree = to_int(tmp_idx_tree) % 2u64.pow((H - H / D) as u32);
+        let idx_leaf = to_int(tmp_idx_leaf) % 2u64.pow((H / D) as u32);
 
-        (md.to_vec(), idx_tree, idx_leaf)
+        (md.to_vec(), idx_tree as u32, idx_leaf as u32)
     }
 }

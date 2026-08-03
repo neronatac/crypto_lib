@@ -13,6 +13,17 @@ impl<const N: usize> XMSSSignature<N> {
     pub fn len(&self) -> usize {
         (self.sig_wots.len() + self.auth.len()) * N
     }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::with_capacity(self.len());
+        for i in self.sig_wots.iter() {
+            res.extend_from_slice(i);
+        }
+        for i in self.auth.iter() {
+            res.extend_from_slice(i);
+        }
+        res
+    }
 }
 
 pub struct XMSS<const N: usize, const H_PRIME: usize, ADRS>
@@ -114,7 +125,7 @@ where
         let mut node1;
 
         adrs.set_type_and_clear(AdrsType::Tree);
-        adrs.set_key_pair_address(idx);
+        adrs.set_tree_index(idx);
 
         for k in 0..H_PRIME {
             adrs.set_tree_height((k + 1) as u32);

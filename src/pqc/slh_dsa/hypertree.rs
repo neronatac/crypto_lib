@@ -12,6 +12,14 @@ impl<const N: usize> HypertreeSignature<N> {
     pub fn len(&self) -> usize {
         self.sigs_xmss.len() * self.sigs_xmss[0].len()
     }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::with_capacity(self.len());
+        for i in self.sigs_xmss.iter() {
+            res.extend_from_slice(&i.as_bytes());
+        }
+        res
+    }
 }
 
 pub struct Hypertree<const N: usize, const D: usize, const H_PRIME: usize, ADRS>

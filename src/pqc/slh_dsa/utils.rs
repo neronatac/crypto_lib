@@ -2,7 +2,7 @@
 /// See Algorithm 4
 pub fn base_2b(x: &[u8], b: usize, out_len: usize) -> Vec<u32> {
     // check params
-    let min_len = ((out_len * b) as f32 / 8f32).ceil() as usize;
+    let min_len = (out_len * b).div_ceil(8);
     if x.len() < min_len {
         panic!("x is too short");
     }
@@ -16,9 +16,9 @@ pub fn base_2b(x: &[u8], b: usize, out_len: usize) -> Vec<u32> {
     let mut bits = 0;
     let mut total = 0;
     
-    for out in 0..out_len {
+    for _ in 0..out_len {
         while bits < b {
-            total = (total << 8) + x[out] as u32;
+            total = (total << 8) + x[in_] as u32;
             in_ += 1;
             bits += 8;
         }
@@ -29,14 +29,27 @@ pub fn base_2b(x: &[u8], b: usize, out_len: usize) -> Vec<u32> {
     baseb
 }
 
-pub fn to_byte<T: num_traits::ToBytes>(x: T, n: usize) -> Vec<u8> {
-    let extend_size = n - x.to_be_bytes().as_ref().len();
-    assert!(extend_size > 0);
+pub fn to_int(x: &[u8]) -> u64 {
+    if x.len() > 8 {
+        panic!("x is too long");
+    }
+    let mut total = 0u64;
+    for i in 0..x.len() {
+        total = (total << 8) + x[i] as u64;
+    }
+    total
+}
+
+pub fn to_byte<T: num_traits::PrimInt>(x: T, n: usize) -> Vec<u8> {
+    let mut total = x;
+    let mut s = vec![0u8; n];
+
+    let mask = T::from(0xFF).unwrap();
     
-    let mut res = Vec::with_capacity(n);
+    for i in 0..n {
+        s[n - 1 - i] = (total & mask).to_u8().unwrap();
+        total = total.unsigned_shr(8);
+    }
     
-    res.extend(std::iter::repeat(0).take(extend_size));
-    res.extend_from_slice(x.to_be_bytes().as_ref());
-    
-    res
+    s
 }

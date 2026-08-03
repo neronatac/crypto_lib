@@ -10,6 +10,17 @@ struct FORSSignatureElement<const N: usize, const A: usize> {
     auth: [[u8; N]; A],
 }
 
+impl<const N: usize, const A: usize> FORSSignatureElement<N, A> {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::with_capacity(N + N * A);
+        res.extend_from_slice(&self.priv_key_val);
+        for i in self.auth.iter() {
+            res.extend_from_slice(i);
+        }
+        res
+    }
+}
+
 #[derive(Clone)]
 pub struct FORSSignature<const N: usize, const A: usize> {
     elements: Vec<FORSSignatureElement<N, A>>,
@@ -18,6 +29,14 @@ pub struct FORSSignature<const N: usize, const A: usize> {
 impl<const N: usize, const A: usize> FORSSignature<N, A> {
     pub fn len(&self) -> usize {
         self.elements.len() * (N + A * N)
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::with_capacity(self.len());
+        for i in self.elements.iter() {
+            res.extend_from_slice(&i.as_bytes());
+        }
+        res
     }
 }
 

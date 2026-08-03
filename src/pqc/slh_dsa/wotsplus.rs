@@ -58,10 +58,10 @@ where
         pk_seed: &[u8; N],
         adrs: &mut ADRS,
     ) -> [u8; N] {
-        let tmp = *x; // copy
+        let mut tmp = *x; // copy
         for j in i..i + s {
             adrs.set_hash_address(j as u32);
-            (self.f_func)(pk_seed, adrs, &tmp);
+            tmp = (self.f_func)(pk_seed, adrs, &tmp);
         }
         tmp
     }
@@ -106,7 +106,7 @@ where
 
         csum = csum << ((8 - (self.len2 * 4) % 8) % 8);
 
-        let target_len = self.len2 / 2; // * 4 / 8
+        let target_len = self.len2.div_ceil(2); // * 4 / 8
         let tmp_bytes = to_byte(csum, target_len);
         msg.extend(base_2b(&tmp_bytes, 4, self.len2));
 
@@ -143,19 +143,19 @@ where
 
         csum = csum << ((8 - (self.len2 * 4) % 8) % 8);
 
-        let target_len = self.len2 / 2; // * 4 / 8
+        let target_len = self.len2.div_ceil(2); // * 4 / 8
         let tmp_bytes = to_byte(csum, target_len);
         msg.extend(base_2b(&tmp_bytes, 4, self.len2));
 
         for i in 0..self.len {
             adrs.set_chain_address(i as u32);
-            tmp[i] = self.chain(
+            tmp.push(self.chain(
                 &sig[i],
                 msg[i] as usize,
                 self.w - 1 - msg[i] as usize,
                 pk_seed,
                 adrs,
-            );
+            ));
         }
 
         let mut wotspk_adrs = adrs.clone();
