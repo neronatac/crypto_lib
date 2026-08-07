@@ -1,4 +1,4 @@
-use crate::pqc::slh_dsa::adrs::AdrsTrait;
+use crate::pqc::slh_dsa::adrs::{AdrsTrait, TreeAddress};
 use crate::pqc::slh_dsa::xmss::{XMSSSignature, XMSS};
 use bytemuck::Pod;
 use std::marker::PhantomData;
@@ -22,21 +22,21 @@ impl<const N: usize> HypertreeSignature<N> {
     }
 }
 
-pub struct Hypertree<const N: usize, const D: usize, const H_PRIME: usize, ADRS>
+pub struct Hypertree<const N: usize, const D: usize, const H_PRIME: usize, ADRS, const TREE_ADDR_LEN: usize>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod, // required by WOTS: to be able to flatten Vec<[u8; N]> to [u8]
 {
     // PhantomData to fakely use ADRS type constraint
     _adrs: PhantomData<ADRS>,
 
     // XMSS structure
-    xmss: XMSS<N, H_PRIME, ADRS>,
+    xmss: XMSS<N, H_PRIME, ADRS, TREE_ADDR_LEN>,
 }
 
-impl<const N: usize, const D: usize, const H_PRIME: usize, ADRS> Hypertree<N, D, H_PRIME, ADRS>
+impl<const N: usize, const D: usize, const H_PRIME: usize, ADRS, const TREE_ADDR_LEN: usize> Hypertree<N, D, H_PRIME, ADRS, TREE_ADDR_LEN>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod,
 {
     pub fn new(
@@ -45,9 +45,9 @@ where
         t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
         h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
     ) -> Self {
-        let xmss = XMSS::<N, H_PRIME, ADRS>::new(f_func, prf_func, t_func, h_func);
+        let xmss = XMSS::<N, H_PRIME, ADRS, TREE_ADDR_LEN>::new(f_func, prf_func, t_func, h_func);
 
-        Hypertree::<N, D, H_PRIME, ADRS> {
+        Hypertree::<N, D, H_PRIME, ADRS, TREE_ADDR_LEN> {
             _adrs: PhantomData,
             xmss,
         }
@@ -58,7 +58,7 @@ where
         m: &[u8; N],
         sk_seed: &[u8; N],
         pk_seed: &[u8; N],
-        idx_tree: u32,
+        idx_tree: TreeAddress<TREE_ADDR_LEN>,
         idx_leaf: u32,
     ) -> HypertreeSignature<N> {
         let mut idx_leaf = idx_leaf;
@@ -67,7 +67,7 @@ where
         let mut sigs_xmss = Vec::<XMSSSignature<N>>::with_capacity(D);
 
         let mut adrs = ADRS::new_null();
-        adrs.set_tree_address(&idx_tree.to_be_bytes());
+        adrs.set_tree_address(idx_tree);
 
         let mut sig_tmp = self.xmss.sign(m, sk_seed, idx_leaf, pk_seed, &mut adrs);
         sigs_xmss.push(sig_tmp.clone());
@@ -77,11 +77,11 @@ where
             .pk_from_sig(idx_leaf, &sig_tmp, m, pk_seed, &mut adrs);
 
         for j in 1..D {
-            idx_leaf = idx_tree % 2u32.pow(H_PRIME as u32);
-            idx_tree >>= H_PRIME;
+            idx_leaf = (idx_tree % 2usize.pow(H_PRIME as u32)).value() as u32;
+            idx_tree = idx_tree >> H_PRIME;
 
             adrs.set_layer_address(j);
-            adrs.set_tree_address(&idx_tree.to_be_bytes());
+            adrs.set_tree_address(idx_tree);
 
             sig_tmp = self.xmss.sign(&root, sk_seed, idx_leaf, pk_seed, &mut adrs);
             sigs_xmss.push(sig_tmp.clone());
@@ -101,7 +101,7 @@ where
         m: &[u8; N],
         sig_ht: &HypertreeSignature<N>,
         pk_seed: &[u8; N],
-        idx_tree: u32,
+        idx_tree: TreeAddress<TREE_ADDR_LEN>,
         idx_leaf: u32,
         pk_root: &[u8; N],
     ) -> bool {
@@ -109,18 +109,18 @@ where
         let mut idx_tree = idx_tree;
 
         let mut adrs = ADRS::new_null();
-        adrs.set_tree_address(&idx_tree.to_be_bytes());
+        adrs.set_tree_address(idx_tree);
 
         let mut node = self
             .xmss
             .pk_from_sig(idx_leaf, &sig_ht.sigs_xmss[0], m, pk_seed, &mut adrs);
 
         for j in 1..D {
-            idx_leaf = idx_tree % 2u32.pow(H_PRIME as u32);
-            idx_tree >>= H_PRIME;
+            idx_leaf = (idx_tree % 2usize.pow(H_PRIME as u32)).value() as u32;
+            idx_tree = idx_tree >> H_PRIME;
 
             adrs.set_layer_address(j);
-            adrs.set_tree_address(&idx_tree.to_be_bytes());
+            adrs.set_tree_address(idx_tree);
 
             node = self
                 .xmss

@@ -3,9 +3,9 @@ use crate::pqc::slh_dsa::utils::{base_2b, to_byte};
 use bytemuck::{cast_slice, Pod};
 use std::marker::PhantomData;
 
-pub struct WOTSPlus<const N: usize, const LGW: usize, ADRS>
+pub struct WOTSPlus<const N: usize, const LGW: usize, ADRS, const TREE_ADDR_LEN: usize>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod, // to be able to flatten Vec<[u8; N]> to [u8]
 {
     // PhantomData to fakely use ADRS type constraint
@@ -23,9 +23,9 @@ where
     pub len: usize,
 }
 
-impl<const N: usize, ADRS> WOTSPlus<N, 4, ADRS>
+impl<const N: usize, ADRS, const TREE_ADDR_LEN: usize> WOTSPlus<N, 4, ADRS, TREE_ADDR_LEN>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod,
 {
     pub fn new(
@@ -38,7 +38,7 @@ where
         let len2 = (((len1 * (w - 1)) as f32).log2() / 4f32).floor() as usize + 1;
         let len = len1 + len2;
 
-        WOTSPlus::<N, 4, ADRS> {
+        WOTSPlus::<N, 4, ADRS, TREE_ADDR_LEN> {
             _adrs: PhantomData,
             f_func,
             prf_func,

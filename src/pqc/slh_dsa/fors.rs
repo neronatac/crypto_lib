@@ -40,9 +40,9 @@ impl<const N: usize, const A: usize> FORSSignature<N, A> {
     }
 }
 
-pub struct FORS<const N: usize, const K: usize, const A: usize, ADRS>
+pub struct FORS<const N: usize, const K: usize, const A: usize, ADRS, const TREE_ADDR_LEN: usize>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod, // to be able to flatten Vec<[u8; N]> to [u8]
 {
     // PhantomData to fakely use ADRS type constraint
@@ -55,9 +55,9 @@ where
     h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
 }
 
-impl<const N: usize, const K: usize, const A: usize, ADRS> FORS<N, K, A, ADRS>
+impl<const N: usize, const K: usize, const A: usize, ADRS, const TREE_ADDR_LEN: usize> FORS<N, K, A, ADRS, TREE_ADDR_LEN>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod,
 {
     pub fn new(
@@ -66,7 +66,7 @@ where
         t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
         h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
     ) -> Self {
-        FORS::<N, K, A, ADRS> {
+        FORS::<N, K, A, ADRS, TREE_ADDR_LEN> {
             _adrs: PhantomData,
             f_func,
             prf_func,

@@ -1,5 +1,5 @@
 use crate::hash::common::Hash;
-use crate::pqc::slh_dsa::adrs::{AdrsTrait, AdrsType};
+use crate::pqc::slh_dsa::adrs::{AdrsTrait, AdrsType, TreeAddress};
 use crate::pqc::slh_dsa::fors::{FORSSignature, FORS};
 use crate::pqc::slh_dsa::hypertree::{Hypertree, HypertreeSignature};
 use crate::pqc::slh_dsa::xmss::XMSS;
@@ -87,8 +87,9 @@ pub struct SLHDSA<
     const K: usize,
     const H: usize,
     ADRS,
+    const TREE_ADDR_LEN: usize
 > where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod, // required by FORS and hypertree
 {
     // PhantomData to fakely use ADRS type constraint
@@ -98,13 +99,13 @@ pub struct SLHDSA<
     h_msg_func: fn(&[u8; N], &[u8; N], &[u8; N], &[u8]) -> Vec<u8>,
 
     // XMSS structure
-    xmss: XMSS<N, H_PRIME, ADRS>,
+    xmss: XMSS<N, H_PRIME, ADRS, TREE_ADDR_LEN>,
 
     // FORS structure
-    fors: FORS<N, K, A, ADRS>,
+    fors: FORS<N, K, A, ADRS, TREE_ADDR_LEN>,
 
     // hypertree structure
-    ht: Hypertree<N, D, H_PRIME, ADRS>,
+    ht: Hypertree<N, D, H_PRIME, ADRS, TREE_ADDR_LEN>,
 }
 
 impl<
@@ -115,9 +116,10 @@ impl<
         const K: usize,
         const H: usize,
         ADRS,
-    > SLHDSA<N, D, H_PRIME, A, K, H, ADRS>
+        const TREE_ADDR_LEN: usize
+    > SLHDSA<N, D, H_PRIME, A, K, H, ADRS, TREE_ADDR_LEN>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod,
 {
     pub fn new(
@@ -128,11 +130,11 @@ where
         prf_msg_func: fn(&[u8; N], &[u8; N], &[u8]) -> [u8; N],
         h_msg_func: fn(&[u8; N], &[u8; N], &[u8; N], &[u8]) -> Vec<u8>,
     ) -> Self {
-        let xmss = XMSS::<N, H_PRIME, ADRS>::new(f_func, prf_func, t_func, h_func);
-        let fors = FORS::<N, K, A, ADRS>::new(f_func, prf_func, t_func, h_func);
-        let ht = Hypertree::<N, D, H_PRIME, ADRS>::new(f_func, prf_func, t_func, h_func);
+        let xmss = XMSS::<N, H_PRIME, ADRS, TREE_ADDR_LEN>::new(f_func, prf_func, t_func, h_func);
+        let fors = FORS::<N, K, A, ADRS, TREE_ADDR_LEN>::new(f_func, prf_func, t_func, h_func);
+        let ht = Hypertree::<N, D, H_PRIME, ADRS, TREE_ADDR_LEN>::new(f_func, prf_func, t_func, h_func);
 
-        SLHDSA::<N, D, H_PRIME, A, K, H, ADRS> {
+        SLHDSA::<N, D, H_PRIME, A, K, H, ADRS, TREE_ADDR_LEN> {
             _adrs: PhantomData,
             prf_msg_func,
             h_msg_func,
@@ -316,7 +318,7 @@ where
 
         let (md, idx_tree, idx_leaf) = self.slice_digest(digest);
 
-        adrs.set_tree_address(&idx_tree.to_be_bytes());
+        adrs.set_tree_address(idx_tree);
         adrs.set_type_and_clear(AdrsType::ForsTree);
         adrs.set_key_pair_address(idx_leaf);
 
@@ -353,7 +355,7 @@ where
 
         let (md, idx_tree, idx_leaf) = self.slice_digest(digest);
 
-        adrs.set_tree_address(&idx_tree.to_be_bytes());
+        adrs.set_tree_address(idx_tree);
         adrs.set_type_and_clear(AdrsType::ForsTree);
         adrs.set_key_pair_address(idx_leaf);
 
@@ -372,7 +374,7 @@ where
     }
 
     // helpers
-    fn slice_digest(&self, digest: Vec<u8>) -> (Vec<u8>, u32, u32) {
+    fn slice_digest(&self, digest: Vec<u8>) -> (Vec<u8>, TreeAddress<TREE_ADDR_LEN>, u32) {
         let md_idx = ((K * A) as f32 / 8f32).ceil() as usize;
         let md = &digest[0..md_idx];
 
@@ -382,9 +384,9 @@ where
         let idx_leaf_idx = (H as f32 / (8 * D) as f32).ceil() as usize;
         let tmp_idx_leaf = &digest[md_idx + idx_tree_idx..md_idx + idx_tree_idx + idx_leaf_idx];
 
-        let idx_tree = to_int(tmp_idx_tree) % 2u64.pow((H - H / D) as u32);
-        let idx_leaf = to_int(tmp_idx_leaf) % 2u64.pow((H / D) as u32);
+        let idx_tree = to_int(tmp_idx_tree) % 2u128.pow((H - H / D) as u32);
+        let idx_leaf = to_int(tmp_idx_leaf) % 2u128.pow((H / D) as u32);
 
-        (md.to_vec(), idx_tree as u32, idx_leaf as u32)
+        (md.to_vec(), TreeAddress::<TREE_ADDR_LEN>::new(idx_tree), idx_leaf as u32)
     }
 }

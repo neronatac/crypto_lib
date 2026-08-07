@@ -29,13 +29,13 @@ pub fn base_2b(x: &[u8], b: usize, out_len: usize) -> Vec<u32> {
     baseb
 }
 
-pub fn to_int(x: &[u8]) -> u64 {
+pub fn to_int(x: &[u8]) -> u128 {
     if x.len() > 8 {
         panic!("x is too long");
     }
-    let mut total = 0u64;
+    let mut total = 0u128;
     for i in 0..x.len() {
-        total = (total << 8) + x[i] as u64;
+        total = 256 * total + x[i] as u128;
     }
     total
 }

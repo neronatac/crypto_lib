@@ -26,9 +26,9 @@ impl<const N: usize> XMSSSignature<N> {
     }
 }
 
-pub struct XMSS<const N: usize, const H_PRIME: usize, ADRS>
+pub struct XMSS<const N: usize, const H_PRIME: usize, ADRS, const TREE_ADDR_LEN: usize>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod, // required by WOTS: to be able to flatten Vec<[u8; N]> to [u8]
 {
     // PhantomData to fakely use ADRS type constraint
@@ -38,12 +38,12 @@ where
     h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
 
     // wots structure
-    pub wots: WOTSPlus<N, 4, ADRS>,
+    pub wots: WOTSPlus<N, 4, ADRS, TREE_ADDR_LEN>,
 }
 
-impl<const N: usize, const H_PRIME: usize, ADRS> XMSS<N, H_PRIME, ADRS>
+impl<const N: usize, const H_PRIME: usize, ADRS, const TREE_ADDR_LEN: usize> XMSS<N, H_PRIME, ADRS, TREE_ADDR_LEN>
 where
-    ADRS: AdrsTrait,
+    ADRS: AdrsTrait<TREE_ADDR_LEN>,
     [u8; N]: Pod,
 {
     pub fn new(
@@ -52,9 +52,9 @@ where
         t_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
         h_func: fn(&[u8; N], &ADRS, &[u8]) -> [u8; N],
     ) -> Self {
-        let wots = WOTSPlus::<N, 4, ADRS>::new(f_func, prf_func, t_func);
+        let wots = WOTSPlus::<N, 4, ADRS, TREE_ADDR_LEN>::new(f_func, prf_func, t_func);
 
-        XMSS::<N, H_PRIME, ADRS> {
+        XMSS::<N, H_PRIME, ADRS, TREE_ADDR_LEN> {
             _adrs: PhantomData,
             h_func,
             wots,
@@ -96,7 +96,7 @@ where
     ) -> XMSSSignature<N> {
         let mut auth = Vec::with_capacity(H_PRIME * N);
         for j in 0..H_PRIME {
-            let k = (idx as f32 / 2u32.pow(j as u32) as f32).floor() as u32;
+            let k = ((idx as f32 / 2u32.pow(j as u32) as f32).floor() as u32) ^ 1;
             auth.push(self.node(sk_seed, k, j as u32, pk_seed, adrs));
         }
 

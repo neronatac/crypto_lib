@@ -18,6 +18,7 @@ where
         hash.update(&c);
         let tmp = hash.finalise();
         t.extend_from_slice(&tmp);
+        ctr += 1;
     }
 
     t[0..mask_len].to_vec()
