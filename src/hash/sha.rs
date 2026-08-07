@@ -53,6 +53,8 @@ fn sha512_expansion(w: &mut [u64; 80]) {
 }
 
 use sha512_expansion as sha384_expansion;
+use sha512_expansion as sha512_224_expansion;
+use sha512_expansion as sha512_256_expansion;
 
 
 fn sha0_round(round: usize, wv: &mut [u32; 5], w: &[u32; 80]) {
@@ -184,6 +186,8 @@ fn sha512_round(round: usize, wv: &mut [u64; 8], w: &[u64; 80]) {
 }
 
 use sha512_round as sha384_round;
+use sha512_round as sha512_224_round;
+use sha512_round as sha512_256_round;
 
 
 const SHA0_INIT_STATE: [u32; 5] = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0];
@@ -200,6 +204,26 @@ const SHA512_INIT_STATE: [u64; 8] = [
     0x1f83d9abfb41bd6b,
     0x5be0cd19137e2179
 ];
+const SHA512_224_INIT_STATE: [u64; 8] = [
+    0x8C3D37C819544DA2,
+    0x73E1996689DCD4D6,
+    0x1DFAB7AE32FF9C82,
+    0x679DD514582F9FCF,
+    0x0F6D2B697BD44DA8,
+    0x77E36F7304C48942,
+    0x3F9D85A86A1D36C8,
+    0x1112E6AD91D692A1
+];
+const SHA512_256_INIT_STATE: [u64; 8] = [
+    0x22312194FC2BF72C,
+    0x9F555FA3C84C64C2,
+    0x2393B86B6F53B151,
+    0x963877195940EABD,
+    0x96283EE2A88EFFE3,
+    0xBE5E1E2553863992,
+    0x2B0199FC2C85B8AA,
+    0x0EB72DDC81C52CA2
+];
 const SHA384_INIT_STATE: [u64; 8] = [
     0xcbbb9d5dc1059ed8,
     0x629a292a367cd507,
@@ -213,14 +237,16 @@ const SHA384_INIT_STATE: [u64; 8] = [
 
 
 macro_rules! create_sha {
-    (0) => {create_sha!(@internal 0, u32, 5, 64, 20, 80, u64);};
-    (1) => {create_sha!(@internal 1, u32, 5, 64, 20, 80, u64);};
-    (256) => {create_sha!(@internal 256, u32, 8, 64, 32, 64, u64);};
-    (384) => {create_sha!(@internal 384, u64, 8, 128, 48, 80, u128);};
-    (512) => {create_sha!(@internal 512, u64, 8, 128, 64, 80, u128);};
+    (0) => {create_sha!(@internal SHA0, u32, 5, 64, 20, 80, u64);};
+    (1) => {create_sha!(@internal SHA1, u32, 5, 64, 20, 80, u64);};
+    (256) => {create_sha!(@internal SHA256, u32, 8, 64, 32, 64, u64);};
+    (384) => {create_sha!(@internal SHA384, u64, 8, 128, 48, 80, u128);};
+    (512) => {create_sha!(@internal SHA512, u64, 8, 128, 64, 80, u128);};
+    (512_224) => {create_sha!(@internal SHA512_224, u64, 8, 128, 28, 80, u128);};
+    (512_256) => {create_sha!(@internal SHA512_256, u64, 8, 128, 32, 80, u128);};
 
     (@internal
-        $sha_number:literal,
+        $sha_name:ident,
         $state_words_type:ty,
         $state_words_nbr:literal,
         $block_size:literal, // bytes
@@ -229,29 +255,29 @@ macro_rules! create_sha {
         $msg_length_type:ty
     ) => {
         paste! {
-            pub struct [< SHA $sha_number Context>] {
+            pub struct [< $sha_name Context>] {
                 state: [$state_words_type; $state_words_nbr],
             }
 
-            pub struct [< SHA $sha_number>] {
-                context: [< SHA $sha_number Context>],
+            pub struct [< $sha_name>] {
+                context: [< $sha_name Context>],
                 remaining_bytes: [u8; $block_size-1],
                 remaining_bytes_len: usize,
                 msg_length: $msg_length_type // in bits
             }
 
-            impl Hash for [< SHA $sha_number>] {
+            impl Hash for [< $sha_name>] {
                 const DIGEST_SIZE: usize = $digest_size;
                 const BLOCK_SIZE: usize = $block_size;
 
                 type DigestType = [u8; Self::DIGEST_SIZE];
                 type InitStruct = ();
-                type Context = [< SHA $sha_number Context>];
+                type Context = [< $sha_name Context>];
 
                 fn new(_: &Self::InitStruct) -> Self {
-                    [< SHA $sha_number>] {
+                    [< $sha_name>] {
                         context: Self::Context {
-                            state: [< SHA $sha_number _INIT_STATE>],
+                            state: [< $sha_name _INIT_STATE>],
                         },
                         remaining_bytes: [0; $block_size-1],
                         remaining_bytes_len: 0,
@@ -259,7 +285,7 @@ macro_rules! create_sha {
                     }
                 }
 
-                generic_update_func!([< process_block_sha $sha_number>] $msg_length_type);
+                generic_update_func!([< process_block_sha $sha_name:lower>] $msg_length_type);
 
                 fn finalise(&mut self) -> Self::DigestType {
                     let mut cur_block = [0; $block_size];
@@ -272,7 +298,7 @@ macro_rules! create_sha {
                     // pad
                     cur_block[self.remaining_bytes_len] = 0x80;
                     if self.remaining_bytes_len >= $block_size-std::mem::size_of::<$msg_length_type>() {
-                        [< process_block_sha $sha_number>](&mut self.context, &cur_block);
+                        [< process_block_sha $sha_name:lower >](&mut self.context, &cur_block);
                         cur_block.fill(0);
                     }
 
@@ -283,18 +309,27 @@ macro_rules! create_sha {
                     }
 
                     // process padded block
-                    [< process_block_sha $sha_number>](&mut self.context, &cur_block);
+                    [< process_block_sha $sha_name:lower>](&mut self.context, &cur_block);
 
                     // return digest
                     let mut ret = [0; $digest_size];
-                    for i in 0..$digest_size/std::mem::size_of::<$state_words_type>() {
-                        ret[i * std::mem::size_of::<$state_words_type>()..(i+1) * std::mem::size_of::<$state_words_type>()].copy_from_slice(&self.context.state[i].to_be_bytes());
+                    let mut i = 0;
+                    let mut w = 0;
+                    while true {
+                        for b in &self.context.state[w].to_be_bytes() {
+                            ret[i] = *b;
+                            i += 1;
+                            if i >= $digest_size {
+                                return ret;
+                            }
+                        }
+                        w += 1;
                     }
                     ret
                 }
             }
 
-            fn [< process_block_sha $sha_number >](context: &mut [< SHA $sha_number Context>], block: &[u8; $block_size]) {
+            fn [< process_block_sha $sha_name:lower >](context: &mut [< $sha_name Context>], block: &[u8; $block_size]) {
                 // transform block into words
                 let mut w = [0; $rounds];
                 for i in 0..16 {
@@ -302,14 +337,14 @@ macro_rules! create_sha {
                 }
 
                 // expand until w[79]
-                [< sha $sha_number _expansion>](&mut w);
+                [< $sha_name:lower _expansion>](&mut w);
 
                 // get working variables (a, b, ...)
                 let mut wv = context.state.clone();
 
                 // do rounds
                 for t in 0..$rounds {
-                    [< sha $sha_number _round>](t, &mut wv, &w);
+                    [< $sha_name:lower _round>](t, &mut wv, &w);
                 }
 
                 // final addition
@@ -326,6 +361,8 @@ create_sha!(1);
 create_sha!(256);
 create_sha!(384);
 create_sha!(512);
+create_sha!(512_224);
+create_sha!(512_256);
 
 
 #[cfg(test)]
@@ -610,6 +647,148 @@ mod tests_sha512 {
 
         let res = sha512.finalise();
         assert_eq!(res, [0x33, 0xf8, 0x90, 0x1b, 0x05, 0x3e, 0x4c, 0xc6, 0x77, 0xd3, 0xcb, 0x41, 0x22, 0xd9, 0x6a, 0xd9, 0xb9, 0x6b, 0x13, 0xbf, 0x76, 0x19, 0x4c, 0xf9, 0x62, 0x48, 0x8b, 0xb4, 0xde, 0x49, 0x98, 0xa7, 0x14, 0x55, 0xcb, 0x31, 0x58, 0x2d, 0xb5, 0x27, 0xad, 0xf7, 0x7a, 0x48, 0x5b, 0x81, 0xcf, 0x5b, 0x72, 0x2a, 0x5e, 0x86, 0x38, 0xeb, 0x6b, 0xe4, 0x87, 0x40, 0x0f, 0x3a, 0xec, 0x00, 0x6e, 0x7c]);
+    }
+}
+
+#[cfg(test)]
+mod tests_sha512_224 {
+    use super::*;
+
+    #[test]
+    fn test_abc() {
+        let mut sha512_224 = SHA512_224::new(&());
+
+        let data = "abc".as_bytes();
+
+        sha512_224.update(&data);
+
+        let res = sha512_224.finalise();
+        assert_eq!(res, [0x46, 0x34, 0x27, 0x0f, 0x70, 0x7b, 0x6a, 0x54, 0xda, 0xae, 0x75, 0x30, 0x46, 0x08, 0x42, 0xe2, 0x0e, 0x37, 0xed, 0x26, 0x5c, 0xee, 0xe9, 0xa4, 0x3e, 0x89, 0x24, 0xaa]);
+    }
+
+    #[test]
+    fn test_padding_two_blocs() {
+        let mut sha512_224 = SHA512_224::new(&());
+
+        let data = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".as_bytes();
+
+        sha512_224.update(&data);
+
+        let res = sha512_224.finalise();
+        assert_eq!(res, [0xe5, 0x30, 0x2d, 0x6d, 0x54, 0xbb, 0x24, 0x22, 0x75, 0xd1, 0xe7, 0x62, 0x2d, 0x68, 0xdf, 0x6e, 0xb0, 0x2d, 0xed, 0xd1, 0x3f, 0x56, 0x4c, 0x13, 0xdb, 0xda, 0x21, 0x74]);
+    }
+
+    #[test]
+    fn test_big() {
+        let mut sha512_224 = SHA512_224::new(&());
+
+        let data = "12345678901234567890123456789012345678901234567890123456789012345678901234567890".as_bytes();
+
+        sha512_224.update(&data);
+
+        let res = sha512_224.finalise();
+        assert_eq!(res, [0xae, 0x98, 0x8f, 0xaa, 0xa4, 0x7e, 0x40, 0x1a, 0x45, 0xf7, 0x04, 0xd1, 0x27, 0x2d, 0x99, 0x70, 0x24, 0x58, 0xfe, 0xa2, 0xdd, 0xc6, 0x58, 0x28, 0x27, 0x55, 0x6d, 0xd2]);
+    }
+
+    #[test]
+    fn test_big_splitted() {
+        let mut sha512_224 = SHA512_224::new(&());
+
+        let data1 = "1234567".as_bytes();
+        let data2 = "890123456789012345678".as_bytes();
+        let data3 = "901234567890123456789012345678901234567890123456".as_bytes();
+        let data4 = "7890".as_bytes();
+
+        sha512_224.update(data1);
+        sha512_224.update(data2);
+        sha512_224.update(data3);
+        sha512_224.update(data4);
+
+        let res = sha512_224.finalise();
+        assert_eq!(res, [0xae, 0x98, 0x8f, 0xaa, 0xa4, 0x7e, 0x40, 0x1a, 0x45, 0xf7, 0x04, 0xd1, 0x27, 0x2d, 0x99, 0x70, 0x24, 0x58, 0xfe, 0xa2, 0xdd, 0xc6, 0x58, 0x28, 0x27, 0x55, 0x6d, 0xd2]);
+    }
+
+    #[test]
+    fn test_bigbig() {
+        let mut sha512_224 = SHA512_224::new(&());
+
+        let data = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890".as_bytes();
+
+        sha512_224.update(&data);
+
+        let res = sha512_224.finalise();
+        assert_eq!(res, [0x16, 0xf3, 0x02, 0xc3, 0xfe, 0x72, 0xb3, 0xcf, 0x14, 0xfa, 0x5b, 0x21, 0x64, 0xa7, 0x88, 0x31, 0x85, 0x03, 0x61, 0x32, 0xfe, 0xb0, 0x69, 0x45, 0xb1, 0xc1, 0x76, 0x11]);
+    }
+}
+
+#[cfg(test)]
+mod tests_sha512_256 {
+    use super::*;
+
+    #[test]
+    fn test_abc() {
+        let mut sha512_256 = SHA512_256::new(&());
+
+        let data = "abc".as_bytes();
+
+        sha512_256.update(&data);
+
+        let res = sha512_256.finalise();
+        assert_eq!(res, [0x53, 0x04, 0x8e, 0x26, 0x81, 0x94, 0x1e, 0xf9, 0x9b, 0x2e, 0x29, 0xb7, 0x6b, 0x4c, 0x7d, 0xab, 0xe4, 0xc2, 0xd0, 0xc6, 0x34, 0xfc, 0x6d, 0x46, 0xe0, 0xe2, 0xf1, 0x31, 0x07, 0xe7, 0xaf, 0x23]);
+    }
+
+    #[test]
+    fn test_padding_two_blocs() {
+        let mut sha512_256 = SHA512_256::new(&());
+
+        let data = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".as_bytes();
+
+        sha512_256.update(&data);
+
+        let res = sha512_256.finalise();
+        assert_eq!(res, [0xbd, 0xe8, 0xe1, 0xf9, 0xf1, 0x9b, 0xb9, 0xfd, 0x34, 0x06, 0xc9, 0x0e, 0xc6, 0xbc, 0x47, 0xbd, 0x36, 0xd8, 0xad, 0xa9, 0xf1, 0x18, 0x80, 0xdb, 0xc8, 0xa2, 0x2a, 0x70, 0x78, 0xb6, 0xa4, 0x61]);
+    }
+
+    #[test]
+    fn test_big() {
+        let mut sha512_256 = SHA512_256::new(&());
+
+        let data = "12345678901234567890123456789012345678901234567890123456789012345678901234567890".as_bytes();
+
+        sha512_256.update(&data);
+
+        let res = sha512_256.finalise();
+        assert_eq!(res, [0x2c, 0x9f, 0xdb, 0xc0, 0xc9, 0x0b, 0xdd, 0x87, 0x61, 0x2e, 0xe8, 0x45, 0x54, 0x74, 0xf9, 0x04, 0x48, 0x50, 0x24, 0x1d, 0xc1, 0x05, 0xb1, 0xe8, 0xb9, 0x4b, 0x8d, 0xdf, 0x5f, 0xac, 0x91, 0x48]);
+    }
+
+    #[test]
+    fn test_big_splitted() {
+        let mut sha512_256 = SHA512_256::new(&());
+
+        let data1 = "1234567".as_bytes();
+        let data2 = "890123456789012345678".as_bytes();
+        let data3 = "901234567890123456789012345678901234567890123456".as_bytes();
+        let data4 = "7890".as_bytes();
+
+        sha512_256.update(data1);
+        sha512_256.update(data2);
+        sha512_256.update(data3);
+        sha512_256.update(data4);
+
+        let res = sha512_256.finalise();
+        assert_eq!(res, [0x2c, 0x9f, 0xdb, 0xc0, 0xc9, 0x0b, 0xdd, 0x87, 0x61, 0x2e, 0xe8, 0x45, 0x54, 0x74, 0xf9, 0x04, 0x48, 0x50, 0x24, 0x1d, 0xc1, 0x05, 0xb1, 0xe8, 0xb9, 0x4b, 0x8d, 0xdf, 0x5f, 0xac, 0x91, 0x48]);
+    }
+
+    #[test]
+    fn test_bigbig() {
+        let mut sha512_256 = SHA512_256::new(&());
+
+        let data = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890".as_bytes();
+
+        sha512_256.update(&data);
+
+        let res = sha512_256.finalise();
+        assert_eq!(res, [0x09, 0x93, 0xc9, 0x02, 0x69, 0x14, 0x52, 0xd0, 0xba, 0x49, 0xc5, 0x4a, 0x09, 0x2f, 0x2f, 0x4d, 0xf9, 0x8c, 0xda, 0x6a, 0xd8, 0x18, 0x7a, 0xc9, 0x72, 0x4b, 0x18, 0xe0, 0x35, 0x7b, 0x0f, 0x0b]);
     }
 }
 
