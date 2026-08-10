@@ -8,9 +8,8 @@
 ///     - `KeyType`: type of the key
 /// - 1 method:
 ///     - `compute`: computes the MAC and returns it
-pub trait MAC {
-    type MACType;   // &[u8; xxx]
+pub trait MAC<const MAC_SIZE: usize> {
     type KeyType;
 
-    fn compute(data: &[u8], key: Self::KeyType) -> Self::MACType;
+    fn compute(data: &[u8], key: Self::KeyType) -> [u8; MAC_SIZE];
 }
